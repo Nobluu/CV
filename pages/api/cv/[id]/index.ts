@@ -21,7 +21,7 @@ export default async function handler(
   }
 
   const client = await clientPromise
-  const db = client.db('smartgen-cv')
+  const db = client.db('cv-maker')
   const cvCollection = db.collection('cvs')
 
   if (req.method === 'GET') {

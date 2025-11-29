@@ -56,7 +56,8 @@ export function useCVData(cvId?: string) {
 
       if (result.success) {
         // Sanitize CV data - ensure all CVs have title
-        const sanitizedCVs = result.data.map((cv: any) => ({
+        const cvs = result.cvs || []
+        const sanitizedCVs = cvs.map((cv: any) => ({
           ...cv,
           title: cv.title || 'Untitled CV'
         }))
@@ -85,7 +86,7 @@ export function useCVData(cvId?: string) {
       const result = await response.json()
 
       if (result.success) {
-        setCVData(result.data)
+        setCVData(result.cv)
       } else {
         toast.error('CV tidak ditemukan')
       }
