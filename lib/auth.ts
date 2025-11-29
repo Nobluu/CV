@@ -6,7 +6,6 @@ import clientPromise from './mongodb'
 export const authOptions: NextAuthOptions = {
   adapter: MongoDBAdapter(clientPromise),
   secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
-  url: process.env.NEXTAUTH_URL || 'http://localhost:3000',
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-client-id',
