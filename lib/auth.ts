@@ -1,10 +1,10 @@
 import { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
-import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
-import clientPromise from './mongodb'
+// import { MongoDBAdapter } from '@next-auth/mongodb-adapter'
+// import clientPromise from './mongodb'
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // adapter: MongoDBAdapter(clientPromise), // Temporarily disabled due to DNS issues
   secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
   providers: [
     GoogleProvider({

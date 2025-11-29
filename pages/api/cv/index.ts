@@ -1,7 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { getServerSession } from 'next-auth'
-import clientPromise from '@/lib/mongodb'
+// import clientPromise from '@/lib/mongodb'
 import { authOptions } from '@/lib/auth'
+
+// Mock data for testing without database
+const mockCVs: any[] = []
 
 export default async function handler(
   req: NextApiRequest,
@@ -13,19 +16,16 @@ export default async function handler(
     return res.status(401).json({ error: 'Unauthorized' })
   }
 
-  const client = await clientPromise
-  const db = client.db('cv-maker')
-  const cvCollection = db.collection('cvs')
+  // Using mock data instead of database
+  // const client = await clientPromise
+  // const db = client.db('cv-maker')
+  // const cvCollection = db.collection('cvs')
 
   if (req.method === 'GET') {
     try {
-      const cvs = await cvCollection
-        .find({ userEmail: session.user.email })
-        .sort({ updatedAt: -1 })
-        .limit(10)
-        .toArray()
-
-      return res.status(200).json({ success: true, cvs })
+      // Return mock CVs filtered by user email
+      const userCVs = mockCVs.filter(cv => cv.userEmail === session.user.email)
+      return res.status(200).json({ success: true, cvs: userCVs })
     } catch (error) {
       console.error('Error fetching CVs:', error)
       return res.status(500).json({ success: false, error: 'Failed to fetch CVs' })
@@ -36,14 +36,19 @@ export default async function handler(
     try {
       const data = req.body
 
-      const newCV = await cvCollection.insertOne({
+      // Create mock CV
+      const newCV = {
+        _id: Date.now().toString(), // Simple ID generation
         ...data,
         userEmail: session.user.email,
         createdAt: new Date(),
         updatedAt: new Date()
-      })
+      }
 
-      const insertedCV = await cvCollection.findOne({ _id: newCV.insertedId })
+      // Add to mock storage
+      mockCVs.push(newCV)
+
+      const insertedCV = newCV
 
       return res.status(201).json({ success: true, cv: insertedCV })
     } catch (error) {
