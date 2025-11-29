@@ -24,9 +24,9 @@ import TemplateSelector from './TemplateSelector'
 import CVPreview from './CVPreview'
 import CVSelector from './CVSelector'
 import CVHistoryPanel from './CVHistoryPanel'
-import PWAInstallPrompt from './PWAInstallPrompt'
-import PWAStatus from './PWAStatus'
-import ServiceWorkerRegistration from './ServiceWorkerRegistration'
+// import PWAInstallPrompt from './PWAInstallPrompt'
+// import PWAStatus from './PWAStatus'
+// import ServiceWorkerRegistration from './ServiceWorkerRegistration'
 import { useCVData } from '@/hooks/useCVData'
 
 type TabType = 'chat' | 'builder' | 'templates' | 'photo' | 'preview'
@@ -440,9 +440,9 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       )}
 
       {/* PWA Components */}
-      <PWAStatus />
-      <PWAInstallPrompt />
-      <ServiceWorkerRegistration />
+      {/* <PWAStatus /> */}
+      {/* <PWAInstallPrompt /> */}
+      {/* <ServiceWorkerRegistration /> */}
     </div>
   )
 }

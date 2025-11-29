@@ -79,3 +79,12 @@ a {
   transform: translateY(-5px);
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
+
+/* Hide PWA Status Panel - Safe selectors only */
+[data-testid="pwa-status"],
+[class*="pwa-status"],
+[id*="pwa-status"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
