@@ -36,64 +36,83 @@ function checkRateLimit(ip: string): boolean {
 }
 
 /**
- * Create a precise mask for DALL-E 2 image editing based on blue background detection
- * Protects subject (non-blue areas) and allows editing of blue background areas
+ * Create AI-like smart mask for DALL-E 2 image editing using advanced background detection
+ * Uses edge detection, color clustering, and contrast analysis for accurate subject/background separation
  */
 async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, height: number = 1024): Promise<Buffer> {
   try {
-    console.log('Creating precise color-based mask with dimensions:', width, 'x', height)
+    console.log('🤖 Creating AI-powered smart mask with dimensions:', width, 'x', height)
     
-    // Get image data for color analysis
+    // Step 1: Get RGB image data for analysis
     const { data: imageData } = await sharp(imageBuffer)
       .resize(width, height, { fit: 'cover' })
       .raw()
       .toBuffer({ resolveWithObject: true })
     
-    console.log('Analyzing image colors for blue background detection...')
+    // Step 2: Generate edge detection mask using Sobel operator
+    console.log('🔍 Performing edge detection analysis...')
+    const edgeMap = new Float32Array(width * height)
     
-    // Create RGBA mask data
+    for (let y = 1; y < height - 1; y++) {
+      for (let x = 1; x < width - 1; x++) {
+        const idx = y * width + x
+        const pixelIdx = idx * 3
+        
+        // Get surrounding pixels for Sobel operator
+        const tl = getGrayscale(imageData, (y-1) * width + (x-1)) // top-left
+        const tm = getGrayscale(imageData, (y-1) * width + x)     // top-middle
+        const tr = getGrayscale(imageData, (y-1) * width + (x+1)) // top-right
+        const ml = getGrayscale(imageData, y * width + (x-1))     // middle-left
+        const mr = getGrayscale(imageData, y * width + (x+1))     // middle-right
+        const bl = getGrayscale(imageData, (y+1) * width + (x-1)) // bottom-left
+        const bm = getGrayscale(imageData, (y+1) * width + x)     // bottom-middle
+        const br = getGrayscale(imageData, (y+1) * width + (x+1)) // bottom-right
+        
+        // Sobel X and Y gradients
+        const sobelX = (tr + 2*mr + br) - (tl + 2*ml + bl)
+        const sobelY = (bl + 2*bm + br) - (tl + 2*tm + tr)
+        const gradient = Math.sqrt(sobelX*sobelX + sobelY*sobelY)
+        
+        edgeMap[idx] = gradient
+      }
+    }
+    
+    // Step 3: Analyze color clusters and background uniformity
+    console.log('🎨 Analyzing color clusters and background patterns...')
+    const colorClusters = analyzeColorClusters(imageData, width, height)
+    const backgroundAreas = detectBackgroundAreas(imageData, edgeMap, width, height, colorClusters)
+    
+    // Step 4: Create sophisticated mask
+    console.log('✨ Generating sophisticated subject/background mask...')
     const maskData = new Uint8Array(width * height * 4)
     
     let protectedPixels = 0
     let editablePixels = 0
-    let bluePixelsDetected = 0
-    
-    // Blue background detection parameters (tuned for typical blue backgrounds)
-    const blueThreshold = {
-      minBlue: 100,     // Minimum blue value (0-255)
-      maxRed: 100,      // Maximum red value for blue detection
-      maxGreen: 150,    // Maximum green value for blue detection  
-      blueDominance: 1.2  // Blue must be X times higher than red/green average
-    }
+    let backgroundDetected = 0
     
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const pixelIdx = (y * width + x) * 3 // RGB data (3 channels)
-        const maskIdx = (y * width + x) * 4   // RGBA mask (4 channels)
+        const idx = y * width + x
+        const maskIdx = idx * 4
+        const pixelIdx = idx * 3
         
-        const r = imageData[pixelIdx]
-        const g = imageData[pixelIdx + 1]  
-        const b = imageData[pixelIdx + 2]
-        
-        // Detect blue background pixels
-        const rgAverage = (r + g) / 2
-        const isBlueBackground = (
-          b >= blueThreshold.minBlue &&                    // Strong blue component
-          r <= blueThreshold.maxRed &&                     // Low red component
-          g <= blueThreshold.maxGreen &&                   // Low green component
-          b > (rgAverage * blueThreshold.blueDominance)    // Blue dominates red+green
+        // Combine multiple detection methods
+        const isBackground = isBackgroundPixel(
+          x, y, idx, 
+          imageData, edgeMap, backgroundAreas, 
+          width, height, colorClusters
         )
         
-        if (isBlueBackground) {
-          // Blue background = TRANSPARENT (EDITABLE AREA)
+        if (isBackground) {
+          // Background area = TRANSPARENT (EDITABLE by DALL-E)
           maskData[maskIdx] = 0       // R = black
           maskData[maskIdx + 1] = 0   // G = black  
           maskData[maskIdx + 2] = 0   // B = black
-          maskData[maskIdx + 3] = 0   // A = transparent (DALL-E will edit this)
+          maskData[maskIdx + 3] = 0   // A = transparent (DALL-E will replace this)
           editablePixels++
-          bluePixelsDetected++
+          backgroundDetected++
         } else {
-          // Non-blue areas (subject) = OPAQUE WHITE (PROTECTED AREA)
+          // Subject area = OPAQUE WHITE (PROTECTED by DALL-E)
           maskData[maskIdx] = 255     // R = white
           maskData[maskIdx + 1] = 255 // G = white
           maskData[maskIdx + 2] = 255 // B = white
@@ -103,22 +122,25 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
       }
     }
     
-    console.log('🎯 MASK STATISTICS (Color-based detection):', {
+    console.log('🎯 AI MASK STATISTICS (Advanced detection):', {
       protectedPixels,
       editablePixels,
-      bluePixelsDetected,
+      backgroundDetected,
       totalPixels: width * height,
       protectionRatio: (protectedPixels / (width * height) * 100).toFixed(2) + '%',
       editableRatio: (editablePixels / (width * height) * 100).toFixed(2) + '%',
-      blueDetectionRatio: (bluePixelsDetected / (width * height) * 100).toFixed(2) + '%'
+      backgroundDetectionRatio: (backgroundDetected / (width * height) * 100).toFixed(2) + '%'
     })
     
     // Validate mask effectiveness
     if (editablePixels === 0) {
-      console.warn('⚠️  WARNING: No editable pixels detected! Mask may be too restrictive.')
+      console.warn('⚠️  WARNING: No background areas detected! Mask may be too restrictive.')
     }
     if (protectedPixels === 0) {
-      console.warn('⚠️  WARNING: No protected pixels! Entire image will be edited.')
+      console.warn('⚠️  WARNING: No subject detected! Entire image will be edited.')
+    }
+    if (backgroundDetected < (width * height * 0.1)) {
+      console.warn('⚠️  WARNING: Very small background area detected. Results may be limited.')
     }
     
     // Convert to PNG buffer using Sharp
@@ -134,9 +156,131 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
     
     return maskBuffer
   } catch (error) {
-    console.error('Error creating mask:', error)
-    throw new Error('Failed to create editing mask')
+    console.error('Error creating smart mask:', error)
+    throw new Error('Failed to create AI-powered editing mask')
   }
+}
+
+/**
+ * Helper function: Convert RGB to grayscale value
+ */
+function getGrayscale(imageData: Uint8Array, pixelIndex: number): number {
+  const idx = pixelIndex * 3
+  const r = imageData[idx]
+  const g = imageData[idx + 1] 
+  const b = imageData[idx + 2]
+  return Math.round(0.299 * r + 0.587 * g + 0.114 * b)
+}
+
+/**
+ * Helper function: Analyze color clusters in the image
+ */
+function analyzeColorClusters(imageData: Uint8Array, width: number, height: number) {
+  const colorMap = new Map<string, number>()
+  const sampleStep = 8 // Sample every 8th pixel for performance
+  
+  for (let y = 0; y < height; y += sampleStep) {
+    for (let x = 0; x < width; x += sampleStep) {
+      const idx = (y * width + x) * 3
+      const r = Math.floor(imageData[idx] / 32) * 32     // Quantize to reduce colors
+      const g = Math.floor(imageData[idx + 1] / 32) * 32
+      const b = Math.floor(imageData[idx + 2] / 32) * 32
+      const colorKey = `${r},${g},${b}`
+      
+      colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1)
+    }
+  }
+  
+  // Find dominant colors (likely background)
+  const sortedColors = Array.from(colorMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5) // Top 5 colors
+  
+  return {
+    dominantColors: sortedColors.map(([color, count]) => ({
+      rgb: color.split(',').map(Number),
+      frequency: count
+    })),
+    totalSamples: Math.floor((width * height) / (sampleStep * sampleStep))
+  }
+}
+
+/**
+ * Helper function: Detect background areas using color uniformity and edge analysis
+ */
+function detectBackgroundAreas(
+  imageData: Uint8Array, 
+  edgeMap: Float32Array, 
+  width: number, 
+  height: number,
+  colorClusters: any
+): Float32Array {
+  const backgroundMap = new Float32Array(width * height)
+  const edgeThreshold = 30 // Pixels with gradient below this are likely uniform background
+  
+  // Mark areas with low edge activity as potential background
+  for (let i = 0; i < width * height; i++) {
+    const gradient = edgeMap[i]
+    const isLowEdge = gradient < edgeThreshold
+    
+    if (isLowEdge) {
+      // Check if pixel color matches dominant background colors
+      const pixelIdx = i * 3
+      const r = imageData[pixelIdx]
+      const g = imageData[pixelIdx + 1]
+      const b = imageData[pixelIdx + 2]
+      
+      let backgroundScore = 0
+      for (const dominant of colorClusters.dominantColors) {
+        const [dr, dg, db] = dominant.rgb
+        const colorDistance = Math.sqrt(
+          Math.pow(r - dr, 2) + Math.pow(g - dg, 2) + Math.pow(b - db, 2)
+        )
+        
+        if (colorDistance < 60) { // Color similarity threshold
+          backgroundScore += dominant.frequency / colorClusters.totalSamples
+        }
+      }
+      
+      backgroundMap[i] = backgroundScore
+    }
+  }
+  
+  return backgroundMap
+}
+
+/**
+ * Helper function: Determine if a pixel is background using combined analysis
+ */
+function isBackgroundPixel(
+  x: number, y: number, idx: number,
+  imageData: Uint8Array,
+  edgeMap: Float32Array,
+  backgroundAreas: Float32Array,
+  width: number, height: number,
+  colorClusters: any
+): boolean {
+  // Border bias - edges of image are more likely background
+  const borderDistance = Math.min(x, y, width - x - 1, height - y - 1)
+  const borderBias = borderDistance < 50 ? 0.3 : 0
+  
+  // Edge activity - low edges suggest uniform background
+  const edgeScore = edgeMap[idx] < 25 ? 0.4 : 0
+  
+  // Color cluster score - matches dominant background colors
+  const colorScore = backgroundAreas[idx]
+  
+  // Center bias - center pixels are less likely to be background (subject usually centered)
+  const centerX = width / 2
+  const centerY = height / 2
+  const centerDistance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
+  const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2))
+  const centerBias = (centerDistance / maxDistance) * 0.2
+  
+  // Combine all scores
+  const backgroundScore = borderBias + edgeScore + colorScore + centerBias
+  
+  return backgroundScore > 0.5 // Threshold for background classification
 }
 
 /**
