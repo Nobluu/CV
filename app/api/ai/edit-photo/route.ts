@@ -317,29 +317,45 @@ function isBackgroundPixelConservative(
     return false // Mid-range protection (shoulders/upper body)
   }
   
-  // Enhanced background detection with better blue detection
+  // Universal background detection for ALL background types
   const pixelIdx = idx * 3
   const r = imageData[pixelIdx]
   const g = imageData[pixelIdx + 1]  
   const b = imageData[pixelIdx + 2]
   
-  // Specific blue background detection (like your photo)
-  const isBlueBackground = (
-    b > 100 &&           // Strong blue
-    b > r * 1.5 &&       // Blue dominates red
-    b > g * 1.2 &&       // Blue dominates green
-    r < 150 && g < 150   // Red and green not too high
-  )
+  // Detect various background types
+  const backgroundTypes = {
+    // Blue backgrounds (studio photos)
+    isBlue: b > 100 && b > r * 1.4 && b > g * 1.2,
+    
+    // White/light backgrounds (studio, office)
+    isWhite: r > 200 && g > 200 && b > 200 && Math.abs(r-g) < 30 && Math.abs(r-b) < 30,
+    
+    // Gray backgrounds (professional)
+    isGray: Math.abs(r-g) < 20 && Math.abs(r-b) < 20 && r > 80 && r < 180,
+    
+    // Green backgrounds (outdoor, screens)  
+    isGreen: g > 100 && g > r * 1.3 && g > b * 1.2,
+    
+    // Red backgrounds (studio, walls)
+    isRed: r > 100 && r > g * 1.3 && r > b * 1.3,
+    
+    // Dark backgrounds (black, navy)
+    isDark: r < 80 && g < 80 && b < 80
+  }
+  
+  // Check if pixel matches any background type
+  const isRecognizedBackground = Object.values(backgroundTypes).some(type => type)
   
   const edgeScore = edgeMap[idx] < 20 ? 0.4 : 0
   const colorScore = backgroundAreas[idx]
   const borderBias = isNearEdge ? 0.3 : 0
-  const blueBonus = isBlueBackground ? 0.5 : 0 // Extra boost for blue pixels
+  const backgroundTypeBonus = isRecognizedBackground ? 0.4 : 0 // Boost for any background type
   
-  // Balanced threshold - not too conservative, not too aggressive  
-  const backgroundScore = borderBias + edgeScore + colorScore + blueBonus
+  // Universal threshold for all background types
+  const backgroundScore = borderBias + edgeScore + colorScore + backgroundTypeBonus
   
-  return backgroundScore > 0.6 // Balanced threshold
+  return backgroundScore > 0.6 // Works for all backgrounds
 }
 
 /**
@@ -653,8 +669,8 @@ async function generate_professional_edited_photo(
     // Step 2: Create precise mask based on blue background detection
     const maskBuffer = await createBackgroundMask(preparedImage, 1024, 1024)
     
-    // Step 3: Build ultra-specific prompt focusing on blue background replacement
-    const comprehensivePrompt = `Replace ONLY the blue background area with: ${userDescriptionPrompt}. PRESERVE everything else: face, hair, skin tone, clothing (shirt and tie), body position, lighting on person. Keep person identical - only change blue background environment to new setting. Maintain professional photo quality.`
+    // Step 3: Build universal prompt for any background type
+    const comprehensivePrompt = `Replace ONLY the background area with: ${userDescriptionPrompt}. PRESERVE everything else: face, hair, skin tone, clothing, body position, lighting on person. Keep person identical - only change background environment to new setting. Works with any background color or pattern. Maintain professional photo quality.`
 
     console.log('Sending request to DALL-E 2...')
     console.log('Image size:', preparedImage.length, 'bytes')
