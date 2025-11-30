@@ -20,12 +20,12 @@ export default function ProfessionalPhotoEditor({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const predefinedPrompts = [
-    'DESTROY blue background ENTIRELY. Make solid bright WHITE studio background. COMPLETE replacement',
-    'ELIMINATE all blue. CREATE smooth gray gradient professional. 100% background transformation',
-    'DEMOLISH existing background. BUILD modern office with blur. TOTAL background makeover',
-    'ERASE background completely. INSTALL clean white professional studio. EXTREME change required',
-    'OBLITERATE blue areas. CONSTRUCT pure white studio lighting. MAXIMUM background alteration',
-    'ANNIHILATE current background. GENERATE navy corporate professional. RADICAL transformation'
+    'Change background to clean white professional studio while keeping person exactly same',
+    'Replace background with smooth gray gradient, preserve subject identity and clothing',
+    'Modify background to modern office environment, maintain original person appearance', 
+    'Update background to pure white studio setup, keep face and clothes identical',
+    'Alter background to professional lighting setup, preserve all subject details',
+    'Transform background to navy corporate setting, maintain person exactly as original'
   ]
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

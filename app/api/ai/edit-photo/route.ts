@@ -96,8 +96,8 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
         const maskIdx = idx * 4
         const pixelIdx = idx * 3
         
-        // Combine multiple detection methods
-        const isBackground = isBackgroundPixel(
+        // Use more conservative background detection to protect subject better
+        const isBackground = isBackgroundPixelConservative(
           x, y, idx, 
           imageData, edgeMap, backgroundAreas, 
           width, height, colorClusters
@@ -286,7 +286,49 @@ function detectBackgroundAreas(
 }
 
 /**
- * Helper function: Determine if a pixel is background using combined analysis
+ * Helper function: Conservative background detection to better protect subject
+ */
+function isBackgroundPixelConservative(
+  x: number, y: number, idx: number,
+  imageData: Uint8Array,
+  edgeMap: Float32Array,
+  backgroundAreas: Float32Array,
+  width: number, height: number,
+  colorClusters: any
+): boolean {
+  // Much stronger center protection - protect larger center area
+  const centerX = width / 2
+  const centerY = height / 2
+  const centerDistance = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2))
+  const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2))
+  const centerRatio = centerDistance / maxDistance
+  
+  // Strong center protection - if within 40% of center, likely subject
+  if (centerRatio < 0.4) {
+    return false // Definitely NOT background (protect this area)
+  }
+  
+  // Border detection - only very edge pixels are definitely background
+  const borderDistance = Math.min(x, y, width - x - 1, height - y - 1)
+  const isNearEdge = borderDistance < 100 // Larger border zone
+  
+  if (!isNearEdge && centerRatio < 0.7) {
+    return false // Not near edge and not far from center = protect
+  }
+  
+  // For edge areas, use stricter background detection
+  const edgeScore = edgeMap[idx] < 15 ? 0.6 : 0 // Stricter edge threshold
+  const colorScore = backgroundAreas[idx] * 1.2 // Boost color matching requirement
+  const borderBias = isNearEdge ? 0.4 : 0
+  
+  // Much higher threshold for background classification
+  const backgroundScore = borderBias + edgeScore + colorScore
+  
+  return backgroundScore > 0.8 // Much higher threshold (more conservative)
+}
+
+/**
+ * Legacy function: Original background detection (kept for reference)
  */
 function isBackgroundPixel(
   x: number, y: number, idx: number,
@@ -596,8 +638,8 @@ async function generate_professional_edited_photo(
     // Step 2: Create precise mask based on blue background detection
     const maskBuffer = await createBackgroundMask(preparedImage, 1024, 1024)
     
-    // Step 3: Build extremely forceful prompt to guarantee background change
-    const comprehensivePrompt = `COMPLETELY REPLACE entire background. REMOVE ALL existing background colors especially blue. ${userDescriptionPrompt}. MUST be dramatically different background. Only keep the person's head and face identical. TRANSFORM background 100%. Professional studio photo.`
+    // Step 3: Build precise prompt to ONLY change background while preserving subject completely
+    const comprehensivePrompt = `ONLY change background area. PRESERVE person's face, hair, clothing, and body position EXACTLY as original. ${userDescriptionPrompt}. Keep subject identity, features, clothing, and pose identical. Only replace background environment. Professional headshot photo.`
 
     console.log('Sending request to DALL-E 2...')
     console.log('Image size:', preparedImage.length, 'bytes')
