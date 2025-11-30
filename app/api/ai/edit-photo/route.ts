@@ -154,6 +154,37 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
     
     console.log('Mask buffer created, size:', maskBuffer.length, 'bytes')
     
+    // 🔍 CRITICAL DEBUGGING: Save mask for manual inspection
+    try {
+      // Save mask to public directory for easy access and inspection
+      const fs = require('fs').promises
+      const path = require('path')
+      const debugMaskPath = path.join(process.cwd(), 'public', 'DEBUG_generated_mask.png')
+      
+      await fs.writeFile(debugMaskPath, maskBuffer)
+      
+      console.log('🔍 MASK DEBUG INFO:')
+      console.log('✅ Mask saved to: /public/DEBUG_generated_mask.png')
+      console.log('📏 Mask dimensions: 1024x1024')
+      console.log('💾 Mask file size:', (maskBuffer.length / (1024*1024)).toFixed(2), 'MB')
+      console.log('🎭 Mask format: PNG with RGBA channels')
+      console.log('🌐 Access via: https://your-domain/DEBUG_generated_mask.png')
+      console.log('')
+      console.log('📋 MASK INSPECTION CHECKLIST:')
+      console.log('   ✅ Subject (face/body) should appear WHITE/OPAQUE')
+      console.log('   ✅ Background should appear TRANSPARENT (checkerboard pattern)')
+      console.log('   ❌ If all white: mask too protective (no editing will happen)')
+      console.log('   ❌ If all transparent: mask too aggressive (face will be edited)')
+      console.log('')
+      
+      // Analyze mask transparency distribution
+      const maskAnalysis = analyzeMaskDistribution(maskData, width, height)
+      console.log('📊 MASK PIXEL ANALYSIS:', maskAnalysis)
+      
+    } catch (saveError: any) {
+      console.warn('⚠️  Could not save debug mask file:', saveError?.message || saveError)
+    }
+    
     return maskBuffer
   } catch (error) {
     console.error('Error creating smart mask:', error)
@@ -284,6 +315,85 @@ function isBackgroundPixel(
 }
 
 /**
+ * Helper function: Analyze mask pixel distribution for debugging
+ */
+function analyzeMaskDistribution(maskData: Uint8Array, width: number, height: number) {
+  let transparentPixels = 0
+  let semiTransparentPixels = 0  
+  let opaquePixels = 0
+  let whitePixels = 0
+  let blackPixels = 0
+  
+  for (let i = 0; i < width * height; i++) {
+    const maskIdx = i * 4
+    const r = maskData[maskIdx]
+    const g = maskData[maskIdx + 1] 
+    const b = maskData[maskIdx + 2]
+    const a = maskData[maskIdx + 3]
+    
+    // Analyze alpha channel (transparency)
+    if (a === 0) {
+      transparentPixels++
+    } else if (a > 0 && a < 255) {
+      semiTransparentPixels++
+    } else {
+      opaquePixels++
+    }
+    
+    // Analyze RGB values
+    if (r === 255 && g === 255 && b === 255) {
+      whitePixels++
+    } else if (r === 0 && g === 0 && b === 0) {
+      blackPixels++
+    }
+  }
+  
+  const totalPixels = width * height
+  
+  return {
+    totalPixels,
+    transparency: {
+      transparent: transparentPixels,
+      semiTransparent: semiTransparentPixels,
+      opaque: opaquePixels,
+      transparentRatio: ((transparentPixels / totalPixels) * 100).toFixed(1) + '%',
+      opaqueRatio: ((opaquePixels / totalPixels) * 100).toFixed(1) + '%'
+    },
+    colors: {
+      white: whitePixels,
+      black: blackPixels,
+      whiteRatio: ((whitePixels / totalPixels) * 100).toFixed(1) + '%',
+      blackRatio: ((blackPixels / totalPixels) * 100).toFixed(1) + '%'
+    },
+    maskQuality: {
+      hasSubject: opaquePixels > 0 && transparentPixels > 0,
+      balanced: transparentPixels > totalPixels * 0.1 && opaquePixels > totalPixels * 0.1,
+      recommendation: getQualityRecommendation(transparentPixels, opaquePixels, totalPixels)
+    }
+  }
+}
+
+/**
+ * Helper function: Get mask quality recommendation
+ */
+function getQualityRecommendation(transparent: number, opaque: number, total: number) {
+  const transparentRatio = transparent / total
+  const opaqueRatio = opaque / total
+  
+  if (transparentRatio < 0.05) {
+    return '❌ Too protective - almost no background will be edited'
+  } else if (transparentRatio > 0.95) {
+    return '❌ Too aggressive - subject will be edited too'
+  } else if (opaqueRatio < 0.05) {
+    return '❌ No subject protection - face/body will be changed'
+  } else if (transparentRatio > 0.1 && opaqueRatio > 0.1) {
+    return '✅ Good balance - should work well with DALL-E'
+  } else {
+    return '⚠️ Moderate balance - may work but check visual result'
+  }
+}
+
+/**
  * Prepare image for DALL-E 2 editing
  */
 async function prepareImageForEditing(imageBuffer: Buffer): Promise<{ buffer: Buffer; originalWidth: number; originalHeight: number }> {
@@ -321,6 +431,19 @@ async function prepareImageForEditing(imageBuffer: Buffer): Promise<{ buffer: Bu
     
     console.log('✅ Image processed successfully, size:', processedBuffer.length, 'bytes')
     console.log('✅ Dimensions validated: 1024x1024')
+    
+    // 🔍 SAVE PROCESSED IMAGE FOR DEBUGGING
+    try {
+      const fs = require('fs').promises
+      const path = require('path')
+      const debugImagePath = path.join(process.cwd(), 'public', 'DEBUG_processed_image.png')
+      
+      await fs.writeFile(debugImagePath, processedBuffer)
+      console.log('🔍 Processed image saved to: /public/DEBUG_processed_image.png')
+      console.log('🌐 Access via: https://your-domain/DEBUG_processed_image.png')
+    } catch (saveError: any) {
+      console.warn('⚠️  Could not save debug image:', saveError?.message || saveError)
+    }
     
     return { buffer: processedBuffer, originalWidth, originalHeight }
   } catch (error) {
