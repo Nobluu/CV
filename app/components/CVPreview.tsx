@@ -256,70 +256,46 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-1 sm:space-x-2">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={handleDownloadPDF}
                 disabled={isGenerating}
-                className="flex items-center space-x-1 sm:space-x-2 bg-primary-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-xs sm:text-sm"
+                className="flex items-center space-x-1 sm:space-x-2 bg-primary-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-sm font-medium"
               >
-                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">PDF</span>
-              </button>
-              
-              <button
-                onClick={handleDownloadImage}
-                disabled={isGenerating}
-                className="flex items-center space-x-1 sm:space-x-2 bg-gray-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-xs sm:text-sm"
-              >
-                <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Image</span>
+                <Download className="w-4 h-4" />
+                <span>PDF</span>
               </button>
               
               <button
                 onClick={handleShare}
-                className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
               >
                 <Share2 className="w-4 h-4" />
-                <span>Share</span>
+                <span className="hidden xs:inline">Share</span>
               </button>
               
               <button
                 onClick={handlePrint}
-                className="flex items-center space-x-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="hidden sm:flex items-center space-x-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors text-sm font-medium"
               >
                 <Printer className="w-4 h-4" />
                 <span>Print</span>
               </button>
-              
-              {onClear && (
-                <button
-                  onClick={() => {
-                    if (window.confirm('Hapus preview CV? Data akan dihapus dari preview.')) {
-                      onClear()
-                      toast.success('Preview CV berhasil dihapus')
-                    }
-                  }}
-                  className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Hapus</span>
-                </button>
-              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* CV Preview */}
-      <div className="flex justify-center px-2 sm:px-0">
-        <div className={`${previewMode === 'mobile' ? 'w-full max-w-sm' : 'w-full max-w-4xl'}`}>
+      <div className="w-full">
+        <div className="w-full overflow-x-auto">
           <div 
             ref={cvRef}
-            className="bg-white shadow-lg border rounded-lg overflow-hidden mx-auto"
+            className="bg-white shadow-lg border rounded-lg mx-auto min-w-full sm:min-w-0"
             style={{ 
               minHeight: '842px', // A4 height in pixels at 96 DPI
-              width: '100%',
-              maxWidth: previewMode === 'mobile' ? '100%' : '794px' // A4 width
+              width: previewMode === 'mobile' ? '100%' : '794px',
+              maxWidth: '100%'
             }}
           >
             {/* CV Content based on template (use normalized data to avoid merged fields) */}
@@ -349,45 +325,45 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
 // Template Components
 function ModernTemplate({ cvData }: { cvData: any }) {
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
+    <div className="cv-preview-container cv-content p-3 sm:p-6 lg:p-8">
       {/* Header */}
-          <div className="bg-primary-600 text-white p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
+          <div className="cv-header bg-primary-600 text-white p-3 sm:p-6 rounded-lg mb-3 sm:mb-6">
             <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
-                <span className="break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
-                <span>{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
-                <span className="break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
+              <h1 className="cv-text text-lg sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+              <div className="flex flex-wrap gap-1 sm:gap-4 text-xs sm:text-sm">
+                <span className="cv-text break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
+                <span className="cv-text">{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
+                <span className="cv-text break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
               </div>
             </div>
           </div>
 
       {/* Summary */}
       {cvData.personalInfo?.summary && (
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-3 sm:mb-6">
+          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Ringkasan Profesional
           </h2>
-          <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{cvData.personalInfo.summary}</p>
+          <p className="cv-text text-sm sm:text-base text-gray-700 leading-relaxed">{cvData.personalInfo.summary}</p>
         </div>
       )}
 
       {/* Experience */}
       {cvData.experience?.length > 0 && (
-        <div className="mb-4 sm:mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-3 sm:mb-6">
+          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Pengalaman Kerja
           </h2>
           {cvData.experience.map((exp: any, index: number) => (
-            <div key={index} className="mb-3 sm:mb-4">
+            <div key={index} className="mb-2 sm:mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                 <div className="flex-1">
-                  <h3 className="text-sm sm:text-base font-semibold text-gray-900">{exp.position}</h3>
-                  <p className="text-sm text-primary-600 font-medium">{exp.company}</p>
+                  <h3 className="cv-text text-sm sm:text-base font-semibold text-gray-900">{exp.position}</h3>
+                  <p className="cv-text text-sm text-primary-600 font-medium">{exp.company}</p>
                 </div>
-                <span className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{exp.duration}</span>
+                <span className="cv-text text-xs sm:text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{exp.duration}</span>
               </div>
-              <p className="text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2 leading-relaxed">{exp.description}</p>
+              <p className="cv-text text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2 leading-relaxed">{exp.description}</p>
             </div>
           ))}
         </div>
