@@ -344,15 +344,16 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
       </div>
 
       {/* CV Preview */}
-      <div className="w-full">
-        <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-hidden">
+        <div className="w-full">
           <div 
             ref={cvRef}
-            className="bg-white shadow-lg border rounded-lg mx-auto min-w-full sm:min-w-0"
+            className="cv-preview-container bg-white shadow-lg border rounded-lg mx-auto w-full"
             style={{ 
               minHeight: '842px', // A4 height in pixels at 96 DPI
-              width: previewMode === 'mobile' ? '100%' : '794px',
-              maxWidth: '100%'
+              width: '100%',
+              maxWidth: '100%',
+              boxSizing: 'border-box'
             }}
           >
             {/* CV Content based on template (use normalized data to avoid merged fields) */}
