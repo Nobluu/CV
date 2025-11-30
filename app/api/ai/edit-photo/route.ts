@@ -104,15 +104,23 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
  */
 async function prepareImageForEditing(imageBuffer: Buffer): Promise<Buffer> {
   try {
-    // Resize to smaller size for faster processing (DALL-E 2 supports 512x512)
+    console.log('Processing image buffer, size:', imageBuffer.length)
+    
+    // Convert and resize image to PNG format (required for DALL-E 2)
     const processedBuffer = await sharp(imageBuffer)
       .resize(512, 512, { 
         fit: 'cover',
         position: 'center'
       })
-      .png({ quality: 90, compressionLevel: 6 }) // Optimize PNG compression
+      .removeAlpha() // Remove alpha channel to avoid transparency issues
+      .png({ 
+        quality: 100,
+        compressionLevel: 0, // No compression to avoid artifacts
+        progressive: false
+      })
       .toBuffer()
     
+    console.log('Image processed successfully, new size:', processedBuffer.length)
     return processedBuffer
   } catch (error) {
     console.error('Error preparing image:', error)
@@ -152,14 +160,26 @@ async function generate_professional_edited_photo(
     console.log('Prompt length:', comprehensivePrompt.length, 'characters')
 
     try {
-      // Step 4: Call DALL-E 2 image editing API with optimized timeout
+      // Step 4: Call DALL-E 2 image editing API with proper File objects
+      const imageArrayBuffer = new Uint8Array(preparedImage).buffer
+      const maskArrayBuffer = new Uint8Array(maskBuffer).buffer
+      
+      const imageFile = new File([imageArrayBuffer], 'image.png', { type: 'image/png' })
+      const maskFile = new File([maskArrayBuffer], 'mask.png', { type: 'image/png' })
+      
+      console.log('Creating DALL-E 2 request with files:', {
+        imageSize: preparedImage.length,
+        maskSize: maskBuffer.length,
+        prompt: comprehensivePrompt
+      })
+
       const response = await Promise.race([
         openai.images.edit({
           model: "dall-e-2",
-          image: preparedImage as any,
-          mask: maskBuffer as any,
+          image: imageFile as any,
+          mask: maskFile as any,
           prompt: comprehensivePrompt,
-          size: "512x512", // Smaller size for faster processing
+          size: "512x512",
           n: 1,
         }),
         new Promise((_, reject) => 
@@ -197,14 +217,16 @@ async function generate_professional_edited_photo(
         switch (apiError.status) {
           case 400:
             console.error('Bad Request (400):', apiError.message)
-            if (apiError.message?.includes('image must be a PNG')) {
-              errorMessage = 'File harus berformat PNG! Silakan konversi file Anda ke PNG menggunakan converter online.'
-            } else if (apiError.message?.includes('less than 4 MB')) {
+            if (apiError.message?.includes('image must be a PNG') || apiError.message?.includes('PNG format')) {
+              errorMessage = 'Error format PNG! Sistem sudah mengkonversi otomatis. Coba dengan foto yang berbeda.'
+            } else if (apiError.message?.includes('less than 4 MB') || apiError.message?.includes('file size')) {
               errorMessage = 'Ukuran file terlalu besar! Maksimal 4MB. Silakan kompres foto Anda.'
-            } else if (apiError.message?.includes('invalid image')) {
-              errorMessage = 'File gambar tidak valid! Pastikan file PNG tidak corrupt.'
+            } else if (apiError.message?.includes('invalid image') || apiError.message?.includes('malformed')) {
+              errorMessage = 'File gambar corrupt atau tidak valid! Coba dengan foto lain.'
+            } else if (apiError.message?.includes('mask') || apiError.message?.includes('transparent')) {
+              errorMessage = 'Error dengan mask editing. Coba dengan foto yang memiliki background jelas.'
             } else {
-              errorMessage = 'Format request tidak valid. Pastikan file PNG dan prompt sudah benar.'
+              errorMessage = `Format tidak valid: ${apiError.message}. Coba foto JPG/PNG yang fresh.`
             }
             break;
 
@@ -318,10 +340,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type - PNG only for DALL-E 2 editing
-    if (imageFile.type !== 'image/png') {
+    // Validate file type - Accept PNG and common image formats, convert to PNG
+    const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
+    if (!allowedTypes.includes(imageFile.type)) {
       return NextResponse.json(
-        { error: 'File harus berformat PNG! DALL-E 2 editing memerlukan file PNG.' },
+        { error: 'Format file tidak didukung! Gunakan PNG, JPG, atau WebP.' },
         { status: 400 }
       )
     }
