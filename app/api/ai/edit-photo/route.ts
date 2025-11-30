@@ -39,7 +39,7 @@ function checkRateLimit(ip: string): boolean {
  * Create a mask for DALL-E 2 image editing
  * Protects the subject (center area) and allows editing of background (outer areas)
  */
-async function createBackgroundMask(width: number = 512, height: number = 512): Promise<Buffer> {
+async function createBackgroundMask(width: number = 1024, height: number = 1024): Promise<Buffer> {
   try {
     // Create a mask where:
     // - White (255) = protected area (subject/face)
@@ -47,38 +47,54 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
     
     const centerX = width / 2
     const centerY = height / 2
-    // Create very aggressive mask - only protect small face area
-    const faceRadiusX = width * 0.15  // Only protect 30% of width (15% radius) - just the face
-    const faceRadiusY = height * 0.18  // Only protect 36% of height (18% radius) - just head area
+    console.log('Creating mask with dimensions:', width, 'x', height)
     
-    // Create binary mask (no gradient) for more aggressive editing
-    const maskData = new Uint8Array(width * height * 4) // RGBA
+    // Create aggressive mask - protect only face area (small center)
+    const faceRadiusX = width * 0.12  // Very small protection area
+    const faceRadiusY = height * 0.15  // Very small protection area
+    
+    console.log('Face protection area:', faceRadiusX, 'x', faceRadiusY)
+    
+    // Create RGBA mask data
+    const maskData = new Uint8Array(width * height * 4)
+    
+    let protectedPixels = 0
+    let editablePixels = 0
     
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4
         
-        // Calculate distance from center (face area only)
+        // Calculate distance from center
         const normalizedX = (x - centerX) / faceRadiusX
         const normalizedY = (y - centerY) / faceRadiusY
         const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
         
-        let alpha
-        if (distance <= 0.8) {
-          // Only protect very center (face) - white (protected)
-          alpha = 255
+        if (distance <= 1.0) {
+          // Protected area (face) = WHITE/OPAQUE
+          maskData[idx] = 255     // R = white
+          maskData[idx + 1] = 255 // G = white
+          maskData[idx + 2] = 255 // B = white
+          maskData[idx + 3] = 255 // A = opaque (PROTECTED)
+          protectedPixels++
         } else {
-          // Everything else is editable - black (editable)
-          alpha = 0
+          // Editable area (background) = BLACK/TRANSPARENT
+          maskData[idx] = 0       // R = black
+          maskData[idx + 1] = 0   // G = black
+          maskData[idx + 2] = 0   // B = black
+          maskData[idx + 3] = 0   // A = transparent (EDITABLE)
+          editablePixels++
         }
-        
-        // Set RGBA values (grayscale mask)
-        maskData[idx] = alpha     // R
-        maskData[idx + 1] = alpha // G
-        maskData[idx + 2] = alpha // B
-        maskData[idx + 3] = 255   // A (always opaque)
       }
     }
+    
+    console.log('Mask statistics:', {
+      protectedPixels,
+      editablePixels,
+      totalPixels: width * height,
+      protectionRatio: (protectedPixels / (width * height) * 100).toFixed(2) + '%',
+      editableRatio: (editablePixels / (width * height) * 100).toFixed(2) + '%'
+    })
     
     // Convert to PNG buffer using Sharp
     const maskBuffer = await sharp(maskData, {
@@ -88,6 +104,8 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
         channels: 4
       }
     }).png().toBuffer()
+    
+    console.log('Mask buffer created, size:', maskBuffer.length, 'bytes')
     
     return maskBuffer
   } catch (error) {
@@ -110,9 +128,9 @@ async function prepareImageForEditing(imageBuffer: Buffer): Promise<{ buffer: Bu
     
     console.log('Original dimensions:', originalWidth, 'x', originalHeight)
     
-    // Resize to 512x512 for DALL-E processing but keep original size info
+    // Resize to 1024x1024 as REQUIRED by DALL-E 2 API
     const processedBuffer = await sharp(imageBuffer)
-      .resize(512, 512, { 
+      .resize(1024, 1024, { 
         fit: 'cover',
         position: 'center'
       })
@@ -124,7 +142,17 @@ async function prepareImageForEditing(imageBuffer: Buffer): Promise<{ buffer: Bu
       })
       .toBuffer()
     
-    console.log('Image processed successfully, new size:', processedBuffer.length)
+    // CRITICAL: Validate final dimensions
+    const finalMetadata = await sharp(processedBuffer).metadata()
+    console.log('Final processed image dimensions:', finalMetadata.width, 'x', finalMetadata.height)
+    
+    if (finalMetadata.width !== 1024 || finalMetadata.height !== 1024) {
+      throw new Error(`Image dimensions MUST be 1024x1024. Got: ${finalMetadata.width}x${finalMetadata.height}`)
+    }
+    
+    console.log('✅ Image processed successfully, size:', processedBuffer.length, 'bytes')
+    console.log('✅ Dimensions validated: 1024x1024')
+    
     return { buffer: processedBuffer, originalWidth, originalHeight }
   } catch (error) {
     console.error('Error preparing image:', error)
@@ -153,8 +181,8 @@ async function generate_professional_edited_photo(
     console.log('Image prepared, original size:', originalWidth, 'x', originalHeight)
     console.log('Creating aggressive mask...')
     
-    // Step 2: Create very aggressive mask that only protects face
-    const maskBuffer = await createBackgroundMask(512, 512)
+    // Step 2: Create very aggressive mask that only protects face (1024x1024)
+    const maskBuffer = await createBackgroundMask(1024, 1024)
     
     // Step 3: Build extremely forceful prompt to guarantee background change
     const comprehensivePrompt = `COMPLETELY REPLACE entire background. REMOVE ALL existing background colors especially blue. ${userDescriptionPrompt}. MUST be dramatically different background. Only keep the person's head and face identical. TRANSFORM background 100%. Professional studio photo.`
@@ -172,11 +200,20 @@ async function generate_professional_edited_photo(
       const imageFile = new File([imageArrayBuffer], 'image.png', { type: 'image/png' })
       const maskFile = new File([maskArrayBuffer], 'mask.png', { type: 'image/png' })
       
-      console.log('Creating DALL-E 2 request with files:', {
-        imageSize: preparedImage.length,
-        maskSize: maskBuffer.length,
-        prompt: comprehensivePrompt
-      })
+      // CRITICAL DEBUGGING: Log everything before API call
+      console.log('=== DALL-E 2 API REQUEST DEBUG ===');
+      console.log('Image file size:', preparedImage.length, 'bytes');
+      console.log('Mask file size:', maskBuffer.length, 'bytes');
+      console.log('Image file type:', imageFile.type);
+      console.log('Mask file type:', maskFile.type);
+      console.log('Prompt:', comprehensivePrompt);
+      console.log('Model: dall-e-2');
+      console.log('Size: 1024x1024');
+      console.log('Files under 4MB?', {
+        image: (preparedImage.length < 4 * 1024 * 1024),
+        mask: (maskBuffer.length < 4 * 1024 * 1024)
+      });
+      console.log('=== END DEBUG ===');
 
       const response = await Promise.race([
         openai.images.edit({
@@ -184,7 +221,7 @@ async function generate_professional_edited_photo(
           image: imageFile as any,
           mask: maskFile as any,
           prompt: comprehensivePrompt,
-          size: "512x512",
+          size: "1024x1024",
           n: 1,
         }),
         new Promise((_, reject) => 
@@ -212,13 +249,20 @@ async function generate_professional_edited_photo(
       }
 
     } catch (apiError: any) {
-      console.error('OpenAI API Error Details:', {
-        message: apiError.message,
-        status: apiError.status,
-        code: apiError.code,
-        type: apiError.type,
-        error: apiError.error
-      })
+      console.error('=== OPENAI API ERROR DETAILS ===');
+      console.error('Error message:', apiError.message);
+      console.error('Status code:', apiError.status);
+      console.error('Error code:', apiError.code);
+      console.error('Error type:', apiError.type);
+      console.error('Full error object:', apiError);
+      console.error('Request config that failed:', {
+        model: 'dall-e-2',
+        size: '1024x1024',
+        imageSize: preparedImage?.length,
+        maskSize: maskBuffer?.length,
+        promptLength: comprehensivePrompt?.length
+      });
+      console.error('=== END ERROR DEBUG ===');
 
       // Handle specific OpenAI API errors
       let errorMessage = 'Gagal mengedit foto profesional'
