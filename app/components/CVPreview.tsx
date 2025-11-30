@@ -221,21 +221,21 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-6 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Preview CV</h2>
-            <p className="text-sm text-gray-600">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Preview CV</h2>
+            <p className="text-xs sm:text-sm text-gray-600">
               Template: {activeTemplate.charAt(0).toUpperCase() + activeTemplate.slice(1)}
             </p>
           </div>
           
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4 overflow-x-auto">
             {/* Preview Mode Toggle */}
             <div className="flex bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setPreviewMode('desktop')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   previewMode === 'desktop'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -245,7 +245,7 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
               </button>
               <button
                 onClick={() => setPreviewMode('mobile')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                className={`px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors ${
                   previewMode === 'mobile'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -256,23 +256,23 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2">
               <button
                 onClick={handleDownloadPDF}
                 disabled={isGenerating}
-                className="flex items-center space-x-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 bg-primary-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors text-xs sm:text-sm"
               >
-                <Download className="w-4 h-4" />
-                <span>PDF</span>
+                <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">PDF</span>
               </button>
               
               <button
                 onClick={handleDownloadImage}
                 disabled={isGenerating}
-                className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                className="flex items-center space-x-1 sm:space-x-2 bg-gray-600 text-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors text-xs sm:text-sm"
               >
-                <FileText className="w-4 h-4" />
-                <span>Image</span>
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">Image</span>
               </button>
               
               <button
@@ -311,14 +311,15 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
       </div>
 
       {/* CV Preview */}
-      <div className="flex justify-center">
-        <div className={`${previewMode === 'mobile' ? 'max-w-sm' : 'max-w-4xl'} w-full`}>
+      <div className="flex justify-center px-2 sm:px-0">
+        <div className={`${previewMode === 'mobile' ? 'w-full max-w-sm' : 'w-full max-w-4xl'}`}>
           <div 
             ref={cvRef}
-            className="bg-white shadow-lg border rounded-lg overflow-hidden"
+            className="bg-white shadow-lg border rounded-lg overflow-hidden mx-auto"
             style={{ 
               minHeight: '842px', // A4 height in pixels at 96 DPI
-              width: previewMode === 'mobile' ? '100%' : '100%'
+              width: '100%',
+              maxWidth: previewMode === 'mobile' ? '100%' : '794px' // A4 width
             }}
           >
             {/* CV Content based on template (use normalized data to avoid merged fields) */}
@@ -348,45 +349,45 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
 // Template Components
 function ModernTemplate({ cvData }: { cvData: any }) {
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-6 lg:p-8">
       {/* Header */}
-          <div className="bg-primary-600 text-white p-6 rounded-lg mb-6">
+          <div className="bg-primary-600 text-white p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
             <div>
-              <h1 className="text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="flex flex-wrap gap-4 text-sm">
-                <span>{cvData.personalInfo?.email || 'email@example.com'}</span>
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+              <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
+                <span className="break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
                 <span>{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
-                <span>{cvData.personalInfo?.address || 'Alamat'}</span>
+                <span className="break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
               </div>
             </div>
           </div>
 
       {/* Summary */}
       {cvData.personalInfo?.summary && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Ringkasan Profesional
           </h2>
-          <p className="text-gray-700">{cvData.personalInfo.summary}</p>
+          <p className="text-sm sm:text-base text-gray-700 leading-relaxed">{cvData.personalInfo.summary}</p>
         </div>
       )}
 
       {/* Experience */}
       {cvData.experience?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Pengalaman Kerja
           </h2>
           {cvData.experience.map((exp: any, index: number) => (
-            <div key={index} className="mb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{exp.position}</h3>
-                  <p className="text-primary-600 font-medium">{exp.company}</p>
+            <div key={index} className="mb-3 sm:mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                <div className="flex-1">
+                  <h3 className="text-sm sm:text-base font-semibold text-gray-900">{exp.position}</h3>
+                  <p className="text-sm text-primary-600 font-medium">{exp.company}</p>
                 </div>
-                <span className="text-sm text-gray-600">{exp.duration}</span>
+                <span className="text-xs sm:text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{exp.duration}</span>
               </div>
-              <p className="text-gray-700 mt-2">{exp.description}</p>
+              <p className="text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2 leading-relaxed">{exp.description}</p>
             </div>
           ))}
         </div>
