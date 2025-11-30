@@ -210,7 +210,7 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
             })
             toast.success('CV berhasil dibagikan!')
           } catch (error) {
-            if (error.name !== 'AbortError') {
+            if (error instanceof Error && error.name !== 'AbortError') {
               console.error('Error sharing file:', error)
               fallbackShare(blob)
             }
