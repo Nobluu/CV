@@ -20,12 +20,12 @@ export default function ProfessionalPhotoEditor({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const predefinedPrompts = [
-    'REPLACE all background with solid pure white studio backdrop. Remove ALL blue completely',
-    'CHANGE background to smooth gray gradient professional studio. Delete all blue areas',
-    'TRANSFORM background to modern office blur with warm lighting. Eliminate blue background',
-    'REMOVE background completely and replace with clean white professional studio setup',
-    'CREATE studio lighting with pure white backdrop. Delete blue background entirely',
-    'SUBSTITUTE background with navy blue corporate professional. Remove original blue background'
+    'DESTROY blue background ENTIRELY. Make solid bright WHITE studio background. COMPLETE replacement',
+    'ELIMINATE all blue. CREATE smooth gray gradient professional. 100% background transformation',
+    'DEMOLISH existing background. BUILD modern office with blur. TOTAL background makeover',
+    'ERASE background completely. INSTALL clean white professional studio. EXTREME change required',
+    'OBLITERATE blue areas. CONSTRUCT pure white studio lighting. MAXIMUM background alteration',
+    'ANNIHILATE current background. GENERATE navy corporate professional. RADICAL transformation'
   ]
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {

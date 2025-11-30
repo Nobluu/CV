@@ -47,31 +47,28 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
     
     const centerX = width / 2
     const centerY = height / 2
-    const protectedRadiusX = width * 0.25  // Protect 50% of width (25% radius from center) - less protection for more background editing
-    const protectedRadiusY = height * 0.3  // Protect 60% of height (30% radius from center) - allow more background change
+    // Create very aggressive mask - only protect small face area
+    const faceRadiusX = width * 0.15  // Only protect 30% of width (15% radius) - just the face
+    const faceRadiusY = height * 0.18  // Only protect 36% of height (18% radius) - just head area
     
-    // Create gradient mask with smooth falloff
+    // Create binary mask (no gradient) for more aggressive editing
     const maskData = new Uint8Array(width * height * 4) // RGBA
     
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = (y * width + x) * 4
         
-        // Calculate distance from center (normalized ellipse)
-        const normalizedX = (x - centerX) / protectedRadiusX
-        const normalizedY = (y - centerY) / protectedRadiusY
+        // Calculate distance from center (face area only)
+        const normalizedX = (x - centerX) / faceRadiusX
+        const normalizedY = (y - centerY) / faceRadiusY
         const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
         
         let alpha
-        if (distance <= 1.0) {
-          // Inside protected ellipse - white (protected)
+        if (distance <= 0.8) {
+          // Only protect very center (face) - white (protected)
           alpha = 255
-        } else if (distance <= 1.3) {
-          // Smooth transition zone
-          const falloff = Math.max(0, (1.3 - distance) / 0.3)
-          alpha = Math.floor(255 * falloff)
         } else {
-          // Outside - black (editable)
+          // Everything else is editable - black (editable)
           alpha = 0
         }
         
@@ -102,11 +99,18 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
 /**
  * Prepare image for DALL-E 2 editing
  */
-async function prepareImageForEditing(imageBuffer: Buffer): Promise<Buffer> {
+async function prepareImageForEditing(imageBuffer: Buffer): Promise<{ buffer: Buffer; originalWidth: number; originalHeight: number }> {
   try {
     console.log('Processing image buffer, size:', imageBuffer.length)
     
-    // Convert and resize image to PNG format (required for DALL-E 2)
+    // Get original dimensions first
+    const metadata = await sharp(imageBuffer).metadata()
+    const originalWidth = metadata.width || 512
+    const originalHeight = metadata.height || 512
+    
+    console.log('Original dimensions:', originalWidth, 'x', originalHeight)
+    
+    // Resize to 512x512 for DALL-E processing but keep original size info
     const processedBuffer = await sharp(imageBuffer)
       .resize(512, 512, { 
         fit: 'cover',
@@ -121,7 +125,7 @@ async function prepareImageForEditing(imageBuffer: Buffer): Promise<Buffer> {
       .toBuffer()
     
     console.log('Image processed successfully, new size:', processedBuffer.length)
-    return processedBuffer
+    return { buffer: processedBuffer, originalWidth, originalHeight }
   } catch (error) {
     console.error('Error preparing image:', error)
     throw new Error('Failed to prepare image for editing')
@@ -142,17 +146,18 @@ async function generate_professional_edited_photo(
   try {
     console.log('Starting professional photo editing...')
     
-    // Step 1: Prepare the original image
+    // Step 1: Prepare the original image and get dimensions
     const originalImageBuffer = Buffer.from(await imageFile.arrayBuffer())
-    const preparedImage = await prepareImageForEditing(originalImageBuffer)
+    const { buffer: preparedImage, originalWidth, originalHeight } = await prepareImageForEditing(originalImageBuffer)
     
-    console.log('Image prepared, creating mask...')
+    console.log('Image prepared, original size:', originalWidth, 'x', originalHeight)
+    console.log('Creating aggressive mask...')
     
-    // Step 2: Create mask that protects the subject
+    // Step 2: Create very aggressive mask that only protects face
     const maskBuffer = await createBackgroundMask(512, 512)
     
-    // Step 3: Build more specific and forceful prompt for visible changes
-    const comprehensivePrompt = `Professional headshot photo editing. MUST change background completely. ${userDescriptionPrompt}. Remove all blue background. Make dramatic background change. Keep person's face, hair, and clothes exactly identical. High quality professional photo.`
+    // Step 3: Build extremely forceful prompt to guarantee background change
+    const comprehensivePrompt = `COMPLETELY REPLACE entire background. REMOVE ALL existing background colors especially blue. ${userDescriptionPrompt}. MUST be dramatically different background. Only keep the person's head and face identical. TRANSFORM background 100%. Professional studio photo.`
 
     console.log('Sending request to DALL-E 2...')
     console.log('Image size:', preparedImage.length, 'bytes')
@@ -189,9 +194,14 @@ async function generate_professional_edited_photo(
 
       if (response.data && response.data.length > 0) {
         console.log('Professional photo editing successful')
+        
+        // If we need to resize back to original dimensions (future enhancement)
+        // For now, return the edited image URL as-is since DALL-E returns 512x512
+        const editedImageUrl = response.data[0].url
+        
         return { 
           success: true, 
-          imageUrl: response.data[0].url 
+          imageUrl: editedImageUrl 
         }
       } else {
         console.error('No data in OpenAI response:', response)
