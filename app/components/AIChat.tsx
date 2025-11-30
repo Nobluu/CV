@@ -172,15 +172,15 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-sm border">
         {/* Header */}
-        <div className="p-6 border-b bg-gradient-to-r from-primary-50 to-blue-50">
+        <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-primary-50 to-blue-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary-600 rounded-full flex items-center justify-center">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">AI Assistant</h2>
-                <p className="text-sm text-gray-600">
+                <h2 className="text-base sm:text-lg font-semibold text-gray-900">AI Assistant</h2>
+                <p className="text-xs sm:text-sm text-gray-600 hidden xs:block">
                   Ceritakan tentang diri Anda dan saya akan membantu membuat CV
                 </p>
               </div>
@@ -199,7 +199,7 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
         </div>
 
         {/* Messages */}
-        <div className="h-96 overflow-y-auto p-6 space-y-4">
+        <div className="h-80 sm:h-96 overflow-y-auto p-3 sm:p-6 space-y-3 sm:space-y-4">
           {messages.map((message) => (
             <motion.div
               key={message.id}
@@ -207,7 +207,7 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex items-start space-x-3 max-w-xs lg:max-w-md ${
+              <div className={`flex items-start space-x-2 sm:space-x-3 max-w-[80%] sm:max-w-xs lg:max-w-md ${
                 message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
               }`}>
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
@@ -261,14 +261,14 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
 
         {/* Suggested Questions */}
         {messages.length === 1 && (
-          <div className="p-6 border-t bg-gray-50">
+          <div className="p-3 sm:p-6 border-t bg-gray-50">
             <p className="text-sm font-medium text-gray-700 mb-3">Contoh yang bisa Anda coba:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2">
               {suggestedQuestions.map((question, index) => (
                 <button
                   key={index}
                   onClick={() => setInput(question)}
-                  className="text-left p-3 bg-white rounded-lg border hover:border-primary-300 hover:bg-primary-50 transition-colors text-sm text-gray-700"
+                  className="text-left p-2 sm:p-3 bg-white rounded-lg border hover:border-primary-300 hover:bg-primary-50 transition-colors text-xs sm:text-sm text-gray-700"
                 >
                   {question}
                 </button>
@@ -278,23 +278,23 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
         )}
 
         {/* Input */}
-        <div className="p-6 border-t">
-          <div className="flex space-x-4">
+        <div className="p-3 sm:p-6 border-t">
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
             <div className="flex-1">
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Ceritakan tentang diri Anda..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white placeholder:text-gray-400"
-                rows={3}
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none text-gray-900 bg-white placeholder:text-gray-400 text-sm sm:text-base"
+                rows={2}
                 disabled={isLoading}
               />
             </div>
             <button
               onClick={handleSendMessage}
               disabled={!input.trim() || isLoading}
-              className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              className="px-4 sm:px-6 py-2 sm:py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2 text-sm sm:text-base"
             >
               <Send className="w-4 h-4" />
               <span>Kirim</span>

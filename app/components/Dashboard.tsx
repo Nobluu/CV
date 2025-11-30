@@ -247,14 +247,15 @@ export default function Dashboard({ onLogout }: DashboardProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center h-14 sm:h-16">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-white" />
+                <div className="w-7 h-7 sm:w-8 sm:h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">SmartGen CV Maker</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 hidden xs:block">SmartGen CV Maker</h1>
+                <h1 className="text-lg font-bold text-gray-900 block xs:hidden">CV Maker</h1>
               </div>
             </div>
             
@@ -278,13 +279,13 @@ export default function Dashboard({ onLogout }: DashboardProps) {
                 </div>
               )}
               
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2 sm:space-x-3">
                 <img
                   src={session?.user?.image || '/default-avatar.png'}
                   alt={session?.user?.name || 'User'}
-                  className="w-8 h-8 rounded-full"
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full"
                 />
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 hidden sm:block">
                   {session?.user?.name || 'Demo User'}
                 </span>
               </div>
@@ -301,24 +302,24 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       </header>
 
       {/* Navigation Tabs */}
-      <div className="bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <nav className="flex space-x-8">
+      <div className="bg-white border-b overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
+          <div className="flex justify-between items-center min-w-max sm:min-w-0">
+            <nav className="flex space-x-4 sm:space-x-8">
               {tabs.map((tab) => {
                 const Icon = tab.icon
                 return (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id as TabType)}
-                    className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    className={`flex items-center space-x-1 sm:space-x-2 py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'border-primary-500 text-primary-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span>{tab.label}</span>
+                    <span className="hidden xs:block">{tab.label}</span>
                   </button>
                 )
               })}
@@ -390,7 +391,7 @@ export default function Dashboard({ onLogout }: DashboardProps) {
       </div>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
         <motion.div
           key={activeTab}
           initial={{ opacity: 0, y: 20 }}
