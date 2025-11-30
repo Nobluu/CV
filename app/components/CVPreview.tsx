@@ -385,10 +385,10 @@ function ModernTemplate({ cvData }: { cvData: any }) {
   return (
     <div className="cv-preview-container cv-content p-3 sm:p-6 lg:p-8">
       {/* Header */}
-          <div className="cv-header bg-primary-600 text-white p-3 sm:p-6 rounded-lg mb-3 sm:mb-6">
+          <div className="cv-header bg-primary-600 text-white p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
             <div>
-              <h1 className="cv-text text-lg sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="flex flex-wrap gap-1 sm:gap-4 text-xs sm:text-sm">
+              <h1 className="cv-text text-xl sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+              <div className="flex flex-wrap gap-2 sm:gap-4 text-sm sm:text-base">
                 <span className="cv-text break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
                 <span className="cv-text">{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
                 <span className="cv-text break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
@@ -398,30 +398,30 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Summary */}
       {cvData.personalInfo?.summary && (
-        <div className="cv-section mb-3 sm:mb-6">
-          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-4 sm:mb-6">
+          <h2 className="cv-text text-lg sm:text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
             Ringkasan Profesional
           </h2>
-          <p className="cv-text text-sm sm:text-base text-gray-700 leading-relaxed">{cvData.personalInfo.summary}</p>
+          <p className="cv-text text-base sm:text-base text-gray-700 leading-relaxed">{cvData.personalInfo.summary}</p>
         </div>
       )}
 
       {/* Experience */}
       {cvData.experience?.length > 0 && (
-        <div className="cv-section mb-3 sm:mb-6">
-          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-4 sm:mb-6">
+          <h2 className="cv-text text-lg sm:text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
             Pengalaman Kerja
           </h2>
           {cvData.experience.map((exp: any, index: number) => (
-            <div key={index} className="mb-2 sm:mb-4">
+            <div key={index} className="mb-3 sm:mb-4">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                 <div className="flex-1">
-                  <h3 className="cv-text text-sm sm:text-base font-semibold text-gray-900">{exp.position}</h3>
+                  <h3 className="cv-text text-base sm:text-base font-semibold text-gray-900">{exp.position}</h3>
                   <p className="cv-text text-sm text-primary-600 font-medium">{exp.company}</p>
                 </div>
-                <span className="cv-text text-xs sm:text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{exp.duration}</span>
+                <span className="cv-text text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{exp.duration}</span>
               </div>
-              <p className="cv-text text-xs sm:text-sm text-gray-700 mt-1 sm:mt-2 leading-relaxed">{exp.description}</p>
+              <p className="cv-text text-sm text-gray-700 mt-2 leading-relaxed">{exp.description}</p>
             </div>
           ))}
         </div>
@@ -429,8 +429,8 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Education */}
       {cvData.education?.length > 0 && (
-        <div className="cv-section mb-3 sm:mb-6">
-          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-4 sm:mb-6">
+          <h2 className="cv-text text-lg sm:text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
             Pendidikan
           </h2>
           {cvData.education.map((edu: any, index: number) => (
@@ -450,8 +450,8 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Skills */}
       {cvData.skills?.length > 0 && (
-        <div className="cv-section mb-3 sm:mb-6">
-          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-4 sm:mb-6">
+          <h2 className="cv-text text-lg sm:text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
             Keahlian
           </h2>
           <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -467,7 +467,7 @@ function ModernTemplate({ cvData }: { cvData: any }) {
       {/* Languages */}
       {cvData.languages?.length > 0 && (
         <div className="cv-section">
-          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
+          <h2 className="cv-text text-lg sm:text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
             Bahasa
           </h2>
           <div className="flex flex-wrap gap-1 sm:gap-2">
