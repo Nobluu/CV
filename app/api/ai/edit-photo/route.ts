@@ -303,28 +303,43 @@ function isBackgroundPixelConservative(
   const maxDistance = Math.sqrt(Math.pow(centerX, 2) + Math.pow(centerY, 2))
   const centerRatio = centerDistance / maxDistance
   
-  // Strong center protection - if within 40% of center, likely subject
-  if (centerRatio < 0.4) {
-    return false // Definitely NOT background (protect this area)
+  // Balanced center protection - protect core subject but allow background editing
+  if (centerRatio < 0.25) {
+    return false // Core center area - definitely subject (face/torso)
   }
   
-  // Border detection - only very edge pixels are definitely background
+  // Border detection - edge pixels are more likely background
   const borderDistance = Math.min(x, y, width - x - 1, height - y - 1)
-  const isNearEdge = borderDistance < 100 // Larger border zone
+  const isNearEdge = borderDistance < 80
   
-  if (!isNearEdge && centerRatio < 0.7) {
-    return false // Not near edge and not far from center = protect
+  // Allow more background detection while protecting subject
+  if (!isNearEdge && centerRatio < 0.5) {
+    return false // Mid-range protection (shoulders/upper body)
   }
   
-  // For edge areas, use stricter background detection
-  const edgeScore = edgeMap[idx] < 15 ? 0.6 : 0 // Stricter edge threshold
-  const colorScore = backgroundAreas[idx] * 1.2 // Boost color matching requirement
-  const borderBias = isNearEdge ? 0.4 : 0
+  // Enhanced background detection with better blue detection
+  const pixelIdx = idx * 3
+  const r = imageData[pixelIdx]
+  const g = imageData[pixelIdx + 1]  
+  const b = imageData[pixelIdx + 2]
   
-  // Much higher threshold for background classification
-  const backgroundScore = borderBias + edgeScore + colorScore
+  // Specific blue background detection (like your photo)
+  const isBlueBackground = (
+    b > 100 &&           // Strong blue
+    b > r * 1.5 &&       // Blue dominates red
+    b > g * 1.2 &&       // Blue dominates green
+    r < 150 && g < 150   // Red and green not too high
+  )
   
-  return backgroundScore > 0.8 // Much higher threshold (more conservative)
+  const edgeScore = edgeMap[idx] < 20 ? 0.4 : 0
+  const colorScore = backgroundAreas[idx]
+  const borderBias = isNearEdge ? 0.3 : 0
+  const blueBonus = isBlueBackground ? 0.5 : 0 // Extra boost for blue pixels
+  
+  // Balanced threshold - not too conservative, not too aggressive  
+  const backgroundScore = borderBias + edgeScore + colorScore + blueBonus
+  
+  return backgroundScore > 0.6 // Balanced threshold
 }
 
 /**
@@ -638,8 +653,8 @@ async function generate_professional_edited_photo(
     // Step 2: Create precise mask based on blue background detection
     const maskBuffer = await createBackgroundMask(preparedImage, 1024, 1024)
     
-    // Step 3: Build precise prompt to ONLY change background while preserving subject completely
-    const comprehensivePrompt = `ONLY change background area. PRESERVE person's face, hair, clothing, and body position EXACTLY as original. ${userDescriptionPrompt}. Keep subject identity, features, clothing, and pose identical. Only replace background environment. Professional headshot photo.`
+    // Step 3: Build ultra-specific prompt focusing on blue background replacement
+    const comprehensivePrompt = `Replace ONLY the blue background area with: ${userDescriptionPrompt}. PRESERVE everything else: face, hair, skin tone, clothing (shirt and tie), body position, lighting on person. Keep person identical - only change blue background environment to new setting. Maintain professional photo quality.`
 
     console.log('Sending request to DALL-E 2...')
     console.log('Image size:', preparedImage.length, 'bytes')
