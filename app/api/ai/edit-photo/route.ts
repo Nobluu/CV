@@ -84,7 +84,7 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
     
     // Step 4: Create sophisticated mask
     console.log('✨ Generating sophisticated subject/background mask...')
-    const maskData = new Uint8Array(width * height * 4)
+    const rawMaskData = new Uint8Array(width * height * 4)
     
     let protectedPixels = 0
     let editablePixels = 0
@@ -104,23 +104,27 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
         )
         
         if (isBackground) {
-          // Background area = TRANSPARENT (EDITABLE by DALL-E)
-          maskData[maskIdx] = 0       // R = black
-          maskData[maskIdx + 1] = 0   // G = black  
-          maskData[maskIdx + 2] = 0   // B = black
-          maskData[maskIdx + 3] = 0   // A = transparent (DALL-E will replace this)
+          // Background area = FULLY TRANSPARENT (EDITABLE by DALL-E)
+          rawMaskData[maskIdx] = 0       // R = black
+          rawMaskData[maskIdx + 1] = 0   // G = black  
+          rawMaskData[maskIdx + 2] = 0   // B = black
+          rawMaskData[maskIdx + 3] = 0   // A = FULLY transparent (0 = DALL-E will replace this)
           editablePixels++
           backgroundDetected++
         } else {
-          // Subject area = OPAQUE WHITE (PROTECTED by DALL-E)
-          maskData[maskIdx] = 255     // R = white
-          maskData[maskIdx + 1] = 255 // G = white
-          maskData[maskIdx + 2] = 255 // B = white
-          maskData[maskIdx + 3] = 255 // A = opaque (DALL-E will preserve this)
+          // Subject area = FULLY OPAQUE WHITE (PROTECTED by DALL-E)
+          rawMaskData[maskIdx] = 255     // R = white
+          rawMaskData[maskIdx + 1] = 255 // G = white
+          rawMaskData[maskIdx + 2] = 255 // B = white
+          rawMaskData[maskIdx + 3] = 255 // A = FULLY opaque (255 = DALL-E will preserve this)
           protectedPixels++
         }
       }
     }
+    
+    // 🧹 CRITICAL: Clean mask to remove semi-transparent artifacts
+    console.log('🧹 Cleaning mask to eliminate semi-transparent artifacts...')
+    const cleanedMaskData = cleanMaskArtifacts(rawMaskData, width, height)
     
     console.log('🎯 AI MASK STATISTICS (Advanced detection):', {
       protectedPixels,
@@ -143,8 +147,8 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
       console.warn('⚠️  WARNING: Very small background area detected. Results may be limited.')
     }
     
-    // Convert to PNG buffer using Sharp
-    const maskBuffer = await sharp(maskData, {
+    // Convert cleaned mask to PNG buffer using Sharp
+    const maskBuffer = await sharp(cleanedMaskData, {
       raw: {
         width,
         height,
@@ -152,7 +156,7 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
       }
     }).png().toBuffer()
     
-    console.log('Mask buffer created, size:', maskBuffer.length, 'bytes')
+    console.log('✅ Clean mask buffer created, size:', maskBuffer.length, 'bytes')
     
     // 🔍 CRITICAL DEBUGGING: Save mask for manual inspection
     try {
@@ -163,23 +167,24 @@ async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, h
       
       await fs.writeFile(debugMaskPath, maskBuffer)
       
-      console.log('🔍 MASK DEBUG INFO:')
-      console.log('✅ Mask saved to: /public/DEBUG_generated_mask.png')
+      console.log('🔍 CLEAN MASK DEBUG INFO:')
+      console.log('✅ Clean mask saved to: /public/DEBUG_generated_mask.png')
       console.log('📏 Mask dimensions: 1024x1024')
       console.log('💾 Mask file size:', (maskBuffer.length / (1024*1024)).toFixed(2), 'MB')
-      console.log('🎭 Mask format: PNG with RGBA channels')
+      console.log('🎭 Mask format: PNG with RGBA channels (CLEANED)')
       console.log('🌐 Access via: https://your-domain/DEBUG_generated_mask.png')
       console.log('')
-      console.log('📋 MASK INSPECTION CHECKLIST:')
-      console.log('   ✅ Subject (face/body) should appear WHITE/OPAQUE')
-      console.log('   ✅ Background should appear TRANSPARENT (checkerboard pattern)')
+      console.log('📋 CLEAN MASK INSPECTION CHECKLIST:')
+      console.log('   ✅ Subject (face/body) should appear PURE WHITE/OPAQUE')
+      console.log('   ✅ Background should appear FULLY TRANSPARENT (checkerboard)')
+      console.log('   ✅ NO semi-transparent pixels (eliminates blue artifacts)')
       console.log('   ❌ If all white: mask too protective (no editing will happen)')
       console.log('   ❌ If all transparent: mask too aggressive (face will be edited)')
       console.log('')
       
-      // Analyze mask transparency distribution
-      const maskAnalysis = analyzeMaskDistribution(maskData, width, height)
-      console.log('📊 MASK PIXEL ANALYSIS:', maskAnalysis)
+      // Analyze cleaned mask transparency distribution
+      const maskAnalysis = analyzeMaskDistribution(cleanedMaskData, width, height)
+      console.log('📊 CLEAN MASK PIXEL ANALYSIS:', maskAnalysis)
       
     } catch (saveError: any) {
       console.warn('⚠️  Could not save debug mask file:', saveError?.message || saveError)
@@ -312,6 +317,121 @@ function isBackgroundPixel(
   const backgroundScore = borderBias + edgeScore + colorScore + centerBias
   
   return backgroundScore > 0.5 // Threshold for background classification
+}
+
+/**
+ * CRITICAL: Clean mask to eliminate semi-transparent artifacts that cause blue remnants
+ */
+function cleanMaskArtifacts(rawMaskData: Uint8Array, width: number, height: number): Uint8Array {
+  console.log('🧹 Applying binary thresholding to eliminate semi-transparent artifacts...')
+  
+  const cleanedMask = new Uint8Array(width * height * 4)
+  let cleaningStats = {
+    semiTransparentCleaned: 0,
+    fullyTransparent: 0,
+    fullyOpaque: 0,
+    artifactsRemoved: 0
+  }
+  
+  // CRITICAL THRESHOLDING: Remove ALL semi-transparency
+  const transparencyThreshold = 10  // Any alpha < 10 becomes 0, >= 10 becomes 255
+  
+  for (let i = 0; i < width * height; i++) {
+    const idx = i * 4
+    const originalAlpha = rawMaskData[idx + 3]
+    
+    if (originalAlpha < transparencyThreshold) {
+      // FORCE FULLY TRANSPARENT (background = editable by DALL-E)
+      cleanedMask[idx] = 0       // R = black
+      cleanedMask[idx + 1] = 0   // G = black
+      cleanedMask[idx + 2] = 0   // B = black
+      cleanedMask[idx + 3] = 0   // A = FULLY transparent (0)
+      cleaningStats.fullyTransparent++
+      
+      if (originalAlpha > 0) {
+        cleaningStats.semiTransparentCleaned++
+      }
+    } else {
+      // FORCE FULLY OPAQUE (subject = protected by DALL-E)
+      cleanedMask[idx] = 255     // R = white
+      cleanedMask[idx + 1] = 255 // G = white
+      cleanedMask[idx + 2] = 255 // B = white
+      cleanedMask[idx + 3] = 255 // A = FULLY opaque (255)
+      cleaningStats.fullyOpaque++
+      
+      if (originalAlpha < 255) {
+        cleaningStats.artifactsRemoved++
+      }
+    }
+  }
+  
+  console.log('🧹 Mask cleaning results:', {
+    ...cleaningStats,
+    totalPixels: width * height,
+    cleaningEffectiveness: cleaningStats.semiTransparentCleaned > 0 ? 'Artifacts removed' : 'Already clean'
+  })
+  
+  // Optional: Apply slight blur to edges then re-threshold for smoother boundaries
+  // This helps eliminate jagged edges while maintaining binary transparency
+  console.log('✨ Applying edge smoothing to prevent jagged boundaries...')
+  const smoothedMask = applyEdgeSmoothing(cleanedMask, width, height)
+  
+  return smoothedMask
+}
+
+/**
+ * Apply subtle edge smoothing to prevent jagged mask boundaries
+ */
+function applyEdgeSmoothing(maskData: Uint8Array, width: number, height: number): Uint8Array {
+  const smoothed = new Uint8Array(maskData) // Copy original
+  
+  // Simple 3x3 kernel smoothing for edge pixels only
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = (y * width + x) * 4
+      const alpha = maskData[idx + 3]
+      
+      // Only smooth pixels at edges (transition zones)
+      if (alpha === 0 || alpha === 255) {
+        // Check if this pixel is near an edge (has different neighbors)
+        const neighbors = [
+          maskData[((y-1) * width + x) * 4 + 3],      // top
+          maskData[((y+1) * width + x) * 4 + 3],      // bottom
+          maskData[(y * width + (x-1)) * 4 + 3],     // left
+          maskData[(y * width + (x+1)) * 4 + 3]      // right
+        ]
+        
+        const hasOppositeNeighbor = neighbors.some(n => 
+          (alpha === 0 && n === 255) || (alpha === 255 && n === 0)
+        )
+        
+        if (hasOppositeNeighbor) {
+          // This is an edge pixel - apply very subtle smoothing
+          const avgNeighbor = neighbors.reduce((sum, n) => sum + n, 0) / neighbors.length
+          
+          // Only adjust if majority of neighbors agree
+          if ((alpha === 0 && avgNeighbor < 64) || (alpha === 255 && avgNeighbor > 191)) {
+            // Keep current value (no change needed)
+            continue
+          } else if (avgNeighbor > 127) {
+            // Majority opaque - make this opaque too
+            smoothed[idx] = 255
+            smoothed[idx + 1] = 255
+            smoothed[idx + 2] = 255
+            smoothed[idx + 3] = 255
+          } else {
+            // Majority transparent - make this transparent too  
+            smoothed[idx] = 0
+            smoothed[idx + 1] = 0
+            smoothed[idx + 2] = 0
+            smoothed[idx + 3] = 0
+          }
+        }
+      }
+    }
+  }
+  
+  return smoothed
 }
 
 /**
