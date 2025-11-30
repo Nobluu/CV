@@ -47,7 +47,8 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
       email: sanitizeText(out.personalInfo?.email),
       phone: sanitizeText(out.personalInfo?.phone),
       address: sanitizeText(out.personalInfo?.address),
-      summary: sanitizeText(out.personalInfo?.summary)
+      summary: sanitizeText(out.personalInfo?.summary),
+      photo: sanitizeText(out.personalInfo?.photo)
     }
 
     // experiences: ensure fields exist and trim, remove accidental duplication of name as position
@@ -387,12 +388,23 @@ function ModernTemplate({ cvData }: { cvData: any }) {
     <div className="cv-preview-container cv-content p-2 sm:p-6 lg:p-8">
       {/* Header */}
           <div className="cv-header bg-primary-600 text-white p-2 sm:p-6 rounded mb-2 sm:mb-6">
-            <div>
-              <h1 className="cv-text text-sm sm:text-2xl lg:text-3xl font-bold mb-1">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-4 text-xs sm:text-base">
-                <span className="cv-text break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
-                <span className="cv-text">{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
-                <span className="cv-text break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
+            <div className="flex items-center gap-4">
+              {cvData.personalInfo?.photo && (
+                <div className="flex-shrink-0">
+                  <img 
+                    src={cvData.personalInfo.photo} 
+                    alt="Profile" 
+                    className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 rounded-full object-cover border-4 border-white shadow-lg"
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <h1 className="cv-text text-sm sm:text-2xl lg:text-3xl font-bold mb-1">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-4 text-xs sm:text-base">
+                  <span className="cv-text break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
+                  <span className="cv-text">{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
+                  <span className="cv-text break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -491,7 +503,15 @@ function CreativeTemplate({ cvData }: { cvData: any }) {
       {/* Header with creative design */}
       <div className="relative mb-8">
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-8 rounded-2xl flex items-center gap-6">
-
+          {cvData.personalInfo?.photo && (
+            <div className="flex-shrink-0">
+              <img 
+                src={cvData.personalInfo.photo} 
+                alt="Profile" 
+                className="w-24 h-24 lg:w-32 lg:h-32 rounded-full object-cover border-4 border-white shadow-xl"
+              />
+            </div>
+          )}
           <div>
             <h1 className="text-4xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -597,14 +617,23 @@ function MinimalistTemplate({ cvData }: { cvData: any }) {
     <div className="p-8 max-w-4xl mx-auto">
       {/* Header */}
       <div className="text-center mb-8">
-            <div>
-              <h1 className="text-4xl font-light text-gray-900 mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="text-gray-600 space-y-1">
-                <p>{cvData.personalInfo?.email || 'email@example.com'}</p>
-                <p>{cvData.personalInfo?.phone || '+62 812 3456 7890'}</p>
-                <p>{cvData.personalInfo?.address || 'Alamat'}</p>
-              </div>
-            </div>
+        {cvData.personalInfo?.photo && (
+          <div className="flex justify-center mb-4">
+            <img 
+              src={cvData.personalInfo.photo} 
+              alt="Profile" 
+              className="w-28 h-28 lg:w-32 lg:h-32 rounded-full object-cover shadow-lg"
+            />
+          </div>
+        )}
+        <div>
+          <h1 className="text-4xl font-light text-gray-900 mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+          <div className="text-gray-600 space-y-1">
+            <p>{cvData.personalInfo?.email || 'email@example.com'}</p>
+            <p>{cvData.personalInfo?.phone || '+62 812 3456 7890'}</p>
+            <p>{cvData.personalInfo?.address || 'Alamat'}</p>
+          </div>
+        </div>
       </div>
 
       {/* Content */}

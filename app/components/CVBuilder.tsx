@@ -12,9 +12,11 @@ import {
   Save,
   Plus,
   Trash2,
-  Edit3
+  Edit3,
+  Camera
 } from 'lucide-react'
 import toast from 'react-hot-toast'
+import ProfessionalPhotoEnhancer from './ProfessionalPhotoEnhancer'
 
 interface CVData {
   personalInfo: {
@@ -23,6 +25,7 @@ interface CVData {
     phone: string
     address: string
     summary: string
+    photo?: string
   }
   experience: Array<{
     id: string
@@ -64,7 +67,8 @@ export default function CVBuilder({ cvData, template, onDataUpdate }: CVBuilderP
       email: '',
       phone: '',
       address: '',
-      summary: ''
+      summary: '',
+      photo: ''
     },
     experience: [],
     education: [],
@@ -87,7 +91,8 @@ export default function CVBuilder({ cvData, template, onDataUpdate }: CVBuilderP
         email: '',
         phone: '',
         address: '',
-        summary: ''
+        summary: '',
+        photo: ''
       }
 
       const loadedData = {
@@ -114,6 +119,7 @@ export default function CVBuilder({ cvData, template, onDataUpdate }: CVBuilderP
 
   const sections = [
     { id: 'personal', label: 'Informasi Pribadi', icon: User },
+    { id: 'photo', label: 'Foto Profesional', icon: Camera },
     { id: 'experience', label: 'Pengalaman Kerja', icon: Briefcase },
     { id: 'education', label: 'Pendidikan', icon: GraduationCap },
     { id: 'skills', label: 'Keahlian', icon: Award },
@@ -325,6 +331,24 @@ export default function CVBuilder({ cvData, template, onDataUpdate }: CVBuilderP
                       })
                     }}
                   />
+              )}
+
+              {activeSection === 'photo' && (
+                <ProfessionalPhotoEnhancer 
+                  onPhotoGenerated={(imageUrl: string) => {
+                    setData(prev => {
+                      const next = { 
+                        ...prev, 
+                        personalInfo: { ...prev.personalInfo, photo: imageUrl } 
+                      }
+                      // notify parent/dashboard immediately so preview updates
+                      onDataUpdate && onDataUpdate(next)
+                      return next
+                    })
+                    toast.success('Foto profesional berhasil ditambahkan ke CV!')
+                  }}
+                  className="max-w-none"
+                />
               )}
 
               {activeSection === 'experience' && (

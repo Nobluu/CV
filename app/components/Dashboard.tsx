@@ -13,15 +13,19 @@ import {
   Plus,
   Eye,
   Edit,
+  Edit3,
   Sparkles,
   Save,
   Check,
-  History
+  History,
+  Camera
 } from 'lucide-react'
 import AIChat from './AIChat'
 import CVBuilder from './CVBuilder'
 import TemplateSelector from './TemplateSelector'
 import CVPreview from './CVPreview'
+import ProfessionalPhotoEnhancer from './ProfessionalPhotoEnhancer'
+import ProfessionalPhotoEditor from './ProfessionalPhotoEditor'
 import CVSelector from './CVSelector'
 import CVHistoryPanel from './CVHistoryPanel'
 // import PWAInstallPrompt from './PWAInstallPrompt'
@@ -29,7 +33,7 @@ import CVHistoryPanel from './CVHistoryPanel'
 // import ServiceWorkerRegistration from './ServiceWorkerRegistration'
 import { useCVData } from '@/hooks/useCVData'
 
-type TabType = 'chat' | 'builder' | 'templates' | 'photo' | 'preview'
+type TabType = 'chat' | 'builder' | 'templates' | 'photo' | 'edit' | 'preview'
 
 interface DashboardProps {
   onLogout?: () => void
@@ -107,6 +111,8 @@ export default function Dashboard({ onLogout }: DashboardProps) {
   const tabs = [
     { id: 'chat', label: 'AI Assistant', icon: MessageSquare },
     { id: 'builder', label: 'CV Builder', icon: FileText },
+    { id: 'photo', label: 'Foto Profesional', icon: Camera },
+    { id: 'edit', label: 'Edit Foto Pro', icon: Edit3 },
     { id: 'templates', label: 'Templates', icon: Eye },
     { id: 'preview', label: 'Preview', icon: Download },
   ]
@@ -407,6 +413,40 @@ export default function Dashboard({ onLogout }: DashboardProps) {
               cvData={cvData} 
               template={selectedTemplate}
               onDataUpdate={handleCVDataUpdate}
+            />
+          )}
+
+          {activeTab === 'photo' && (
+            <ProfessionalPhotoEnhancer 
+              onPhotoGenerated={(imageUrl: string) => {
+                const updatedData = {
+                  ...cvData,
+                  personalInfo: {
+                    ...(cvData?.personalInfo || {}),
+                    photo: imageUrl
+                  }
+                }
+                handleCVDataUpdate(updatedData)
+                toast.success('Foto profesional berhasil ditambahkan ke CV!')
+              }}
+              className="max-w-none"
+            />
+          )}
+
+          {activeTab === 'edit' && (
+            <ProfessionalPhotoEditor 
+              onPhotoEdited={(imageUrl: string) => {
+                const updatedData = {
+                  ...cvData,
+                  personalInfo: {
+                    ...(cvData?.personalInfo || {}),
+                    photo: imageUrl
+                  }
+                }
+                handleCVDataUpdate(updatedData)
+                toast.success('Foto profesional berhasil diedit dan ditambahkan ke CV!')
+              }}
+              className="max-w-none"
             />
           )}
           
