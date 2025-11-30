@@ -47,8 +47,8 @@ async function createBackgroundMask(width: number = 512, height: number = 512): 
     
     const centerX = width / 2
     const centerY = height / 2
-    const protectedRadiusX = width * 0.35  // Protect 70% of width (35% radius from center)
-    const protectedRadiusY = height * 0.4  // Protect 80% of height (40% radius from center)
+    const protectedRadiusX = width * 0.25  // Protect 50% of width (25% radius from center) - less protection for more background editing
+    const protectedRadiusY = height * 0.3  // Protect 60% of height (30% radius from center) - allow more background change
     
     // Create gradient mask with smooth falloff
     const maskData = new Uint8Array(width * height * 4) // RGBA
@@ -151,8 +151,8 @@ async function generate_professional_edited_photo(
     // Step 2: Create mask that protects the subject
     const maskBuffer = await createBackgroundMask(512, 512)
     
-    // Step 3: Build optimized prompt for faster processing
-    const comprehensivePrompt = `Professional CV headshot. Keep face identical. Change only: ${userDescriptionPrompt}. Realistic photo quality.`
+    // Step 3: Build more specific and forceful prompt for visible changes
+    const comprehensivePrompt = `Professional headshot photo editing. MUST change background completely. ${userDescriptionPrompt}. Remove all blue background. Make dramatic background change. Keep person's face, hair, and clothes exactly identical. High quality professional photo.`
 
     console.log('Sending request to DALL-E 2...')
     console.log('Image size:', preparedImage.length, 'bytes')

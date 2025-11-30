@@ -20,12 +20,12 @@ export default function ProfessionalPhotoEditor({
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const predefinedPrompts = [
-    'Ubah latar belakang menjadi putih bersih profesional',
-    'Ganti background dengan gradient abu-abu halus dan modern',
-    'Buat latar belakang kantor modern yang blur',
-    'Hapus semua elemen yang mengganggu dari background',
-    'Perbaiki pencahayaan dan buat background putih studio',
-    'Ganti dengan latar belakang biru navy profesional'
+    'REPLACE all background with solid pure white studio backdrop. Remove ALL blue completely',
+    'CHANGE background to smooth gray gradient professional studio. Delete all blue areas',
+    'TRANSFORM background to modern office blur with warm lighting. Eliminate blue background',
+    'REMOVE background completely and replace with clean white professional studio setup',
+    'CREATE studio lighting with pure white backdrop. Delete blue background entirely',
+    'SUBSTITUTE background with navy blue corporate professional. Remove original blue background'
   ]
 
   const handleImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
