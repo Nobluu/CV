@@ -36,65 +36,90 @@ function checkRateLimit(ip: string): boolean {
 }
 
 /**
- * Create a mask for DALL-E 2 image editing
- * Protects the subject (center area) and allows editing of background (outer areas)
+ * Create a precise mask for DALL-E 2 image editing based on blue background detection
+ * Protects subject (non-blue areas) and allows editing of blue background areas
  */
-async function createBackgroundMask(width: number = 1024, height: number = 1024): Promise<Buffer> {
+async function createBackgroundMask(imageBuffer: Buffer, width: number = 1024, height: number = 1024): Promise<Buffer> {
   try {
-    // Create a mask where:
-    // - White (255) = protected area (subject/face)
-    // - Black (0) = area to be edited (background)
+    console.log('Creating precise color-based mask with dimensions:', width, 'x', height)
     
-    const centerX = width / 2
-    const centerY = height / 2
-    console.log('Creating mask with dimensions:', width, 'x', height)
+    // Get image data for color analysis
+    const { data: imageData } = await sharp(imageBuffer)
+      .resize(width, height, { fit: 'cover' })
+      .raw()
+      .toBuffer({ resolveWithObject: true })
     
-    // Create aggressive mask - protect only face area (small center)
-    const faceRadiusX = width * 0.12  // Very small protection area
-    const faceRadiusY = height * 0.15  // Very small protection area
-    
-    console.log('Face protection area:', faceRadiusX, 'x', faceRadiusY)
+    console.log('Analyzing image colors for blue background detection...')
     
     // Create RGBA mask data
     const maskData = new Uint8Array(width * height * 4)
     
     let protectedPixels = 0
     let editablePixels = 0
+    let bluePixelsDetected = 0
+    
+    // Blue background detection parameters (tuned for typical blue backgrounds)
+    const blueThreshold = {
+      minBlue: 100,     // Minimum blue value (0-255)
+      maxRed: 100,      // Maximum red value for blue detection
+      maxGreen: 150,    // Maximum green value for blue detection  
+      blueDominance: 1.2  // Blue must be X times higher than red/green average
+    }
     
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4
+        const pixelIdx = (y * width + x) * 3 // RGB data (3 channels)
+        const maskIdx = (y * width + x) * 4   // RGBA mask (4 channels)
         
-        // Calculate distance from center
-        const normalizedX = (x - centerX) / faceRadiusX
-        const normalizedY = (y - centerY) / faceRadiusY
-        const distance = Math.sqrt(normalizedX * normalizedX + normalizedY * normalizedY)
+        const r = imageData[pixelIdx]
+        const g = imageData[pixelIdx + 1]  
+        const b = imageData[pixelIdx + 2]
         
-        if (distance <= 1.0) {
-          // Protected area (face) = WHITE/OPAQUE
-          maskData[idx] = 255     // R = white
-          maskData[idx + 1] = 255 // G = white
-          maskData[idx + 2] = 255 // B = white
-          maskData[idx + 3] = 255 // A = opaque (PROTECTED)
-          protectedPixels++
-        } else {
-          // Editable area (background) = BLACK/TRANSPARENT
-          maskData[idx] = 0       // R = black
-          maskData[idx + 1] = 0   // G = black
-          maskData[idx + 2] = 0   // B = black
-          maskData[idx + 3] = 0   // A = transparent (EDITABLE)
+        // Detect blue background pixels
+        const rgAverage = (r + g) / 2
+        const isBlueBackground = (
+          b >= blueThreshold.minBlue &&                    // Strong blue component
+          r <= blueThreshold.maxRed &&                     // Low red component
+          g <= blueThreshold.maxGreen &&                   // Low green component
+          b > (rgAverage * blueThreshold.blueDominance)    // Blue dominates red+green
+        )
+        
+        if (isBlueBackground) {
+          // Blue background = TRANSPARENT (EDITABLE AREA)
+          maskData[maskIdx] = 0       // R = black
+          maskData[maskIdx + 1] = 0   // G = black  
+          maskData[maskIdx + 2] = 0   // B = black
+          maskData[maskIdx + 3] = 0   // A = transparent (DALL-E will edit this)
           editablePixels++
+          bluePixelsDetected++
+        } else {
+          // Non-blue areas (subject) = OPAQUE WHITE (PROTECTED AREA)
+          maskData[maskIdx] = 255     // R = white
+          maskData[maskIdx + 1] = 255 // G = white
+          maskData[maskIdx + 2] = 255 // B = white
+          maskData[maskIdx + 3] = 255 // A = opaque (DALL-E will preserve this)
+          protectedPixels++
         }
       }
     }
     
-    console.log('Mask statistics:', {
+    console.log('🎯 MASK STATISTICS (Color-based detection):', {
       protectedPixels,
       editablePixels,
+      bluePixelsDetected,
       totalPixels: width * height,
       protectionRatio: (protectedPixels / (width * height) * 100).toFixed(2) + '%',
-      editableRatio: (editablePixels / (width * height) * 100).toFixed(2) + '%'
+      editableRatio: (editablePixels / (width * height) * 100).toFixed(2) + '%',
+      blueDetectionRatio: (bluePixelsDetected / (width * height) * 100).toFixed(2) + '%'
     })
+    
+    // Validate mask effectiveness
+    if (editablePixels === 0) {
+      console.warn('⚠️  WARNING: No editable pixels detected! Mask may be too restrictive.')
+    }
+    if (protectedPixels === 0) {
+      console.warn('⚠️  WARNING: No protected pixels! Entire image will be edited.')
+    }
     
     // Convert to PNG buffer using Sharp
     const maskBuffer = await sharp(maskData, {
@@ -181,8 +206,8 @@ async function generate_professional_edited_photo(
     console.log('Image prepared, original size:', originalWidth, 'x', originalHeight)
     console.log('Creating aggressive mask...')
     
-    // Step 2: Create very aggressive mask that only protects face (1024x1024)
-    const maskBuffer = await createBackgroundMask(1024, 1024)
+    // Step 2: Create precise mask based on blue background detection
+    const maskBuffer = await createBackgroundMask(preparedImage, 1024, 1024)
     
     // Step 3: Build extremely forceful prompt to guarantee background change
     const comprehensivePrompt = `COMPLETELY REPLACE entire background. REMOVE ALL existing background colors especially blue. ${userDescriptionPrompt}. MUST be dramatically different background. Only keep the person's head and face identical. TRANSFORM background 100%. Professional studio photo.`
