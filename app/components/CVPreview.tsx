@@ -173,21 +173,73 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
   }
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'CV - SmartGen CV Maker',
-          text: `CV dari ${cvData?.personalInfo?.name || 'SmartGen CV Maker'}`,
-          url: window.location.href
-        })
-      } catch (error) {
-        console.error('Error sharing:', error)
-      }
-    } else {
-      // Fallback: copy to clipboard
-      navigator.clipboard.writeText(window.location.href)
-      toast.success('Link berhasil disalin ke clipboard!')
+    if (!cvRef.current) {
+      toast.error('CV belum siap untuk dibagikan')
+      return
     }
+
+    try {
+      setIsGenerating(true)
+      
+      // Generate CV as image
+      const canvas = await html2canvas(cvRef.current, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      })
+
+      // Convert canvas to blob
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast.error('Gagal membuat gambar CV')
+          return
+        }
+
+        const file = new File([blob], `${cvData?.personalInfo?.name || 'CV'}.png`, {
+          type: 'image/png'
+        })
+
+        // Check if Web Share API supports files
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              title: `CV ${cvData?.personalInfo?.name || 'CV Saya'}`,
+              text: `CV dari ${cvData?.personalInfo?.name || 'SmartGen CV Maker'}`,
+              files: [file]
+            })
+            toast.success('CV berhasil dibagikan!')
+          } catch (error) {
+            if (error.name !== 'AbortError') {
+              console.error('Error sharing file:', error)
+              fallbackShare(blob)
+            }
+          }
+        } else {
+          // Fallback: download or copy link
+          fallbackShare(blob)
+        }
+      }, 'image/png', 0.95)
+    } catch (error) {
+      console.error('Error generating CV for sharing:', error)
+      toast.error('Gagal membuat CV untuk dibagikan')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const fallbackShare = (blob: Blob) => {
+    // Create download link for the CV image
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${cvData?.personalInfo?.name || 'CV'}.png`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast.success('CV diunduh! Anda bisa membagikan file ini secara manual')
   }
 
   const handlePrint = () => {
@@ -268,10 +320,12 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
               
               <button
                 onClick={handleShare}
-                className="flex items-center space-x-1 sm:space-x-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                disabled={isGenerating}
+                className="flex items-center space-x-1 sm:space-x-2 bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors text-sm font-medium"
               >
                 <Share2 className="w-4 h-4" />
-                <span className="hidden xs:inline">Share</span>
+                <span className="hidden xs:inline">Share CV</span>
+                <span className="xs:hidden">Share</span>
               </button>
               
               <button
