@@ -208,12 +208,15 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
               text: `CV dari ${cvData?.personalInfo?.name || 'SmartGen CV Maker'}`,
               files: [file]
             })
+            // Only show success if share was actually completed (not cancelled)
             toast.success('CV berhasil dibagikan!')
           } catch (error) {
             if (error instanceof Error && error.name !== 'AbortError') {
               console.error('Error sharing file:', error)
+              toast.error('Gagal membagikan CV')
               fallbackShare(blob)
             }
+            // If AbortError (user cancelled), don't show any message
           }
         } else {
           // Fallback: download or copy link
@@ -239,7 +242,7 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
     
-    toast.success('CV diunduh! Anda bisa membagikan file ini secara manual')
+    toast.success('CV tersimpan! Silakan bagikan file dari folder Download')
   }
 
   const handlePrint = () => {
@@ -425,19 +428,19 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Education */}
       {cvData.education?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-3 sm:mb-6">
+          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Pendidikan
           </h2>
           {cvData.education.map((edu: any, index: number) => (
-            <div key={index} className="mb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="font-semibold text-gray-900">{edu.degree}</h3>
-                  <p className="text-primary-600 font-medium">{edu.institution}</p>
-                  <p className="text-gray-600">{edu.field}</p>
+            <div key={index} className="mb-2 sm:mb-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
+                <div className="flex-1">
+                  <h3 className="cv-text text-sm sm:text-base font-semibold text-gray-900">{edu.degree}</h3>
+                  <p className="cv-text text-sm text-primary-600 font-medium">{edu.institution}</p>
+                  <p className="cv-text text-xs sm:text-sm text-gray-600">{edu.field}</p>
                 </div>
-                <span className="text-sm text-gray-600">{edu.year}</span>
+                <span className="cv-text text-xs sm:text-sm text-gray-600 mt-1 sm:mt-0 sm:ml-4">{edu.year}</span>
               </div>
             </div>
           ))}
@@ -446,13 +449,13 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Skills */}
       {cvData.skills?.length > 0 && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section mb-3 sm:mb-6">
+          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Keahlian
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {cvData.skills.map((skill: any, index: number) => (
-              <span key={index} className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm">
+              <span key={index} className="cv-text bg-primary-100 text-primary-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
                 {typeof skill === 'string' ? skill : (skill?.name || 'Skill')} {skill?.level && `(${skill?.level})`}
               </span>
             ))}
@@ -462,13 +465,13 @@ function ModernTemplate({ cvData }: { cvData: any }) {
 
       {/* Languages */}
       {cvData.languages?.length > 0 && (
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-3 border-b-2 border-primary-600 pb-1">
+        <div className="cv-section">
+          <h2 className="cv-text text-base sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 border-b-2 border-primary-600 pb-1">
             Bahasa
           </h2>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 sm:gap-2">
             {cvData.languages.map((lang: any, index: number) => (
-              <span key={index} className="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm">
+              <span key={index} className="cv-text bg-gray-100 text-gray-800 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm">
                 {typeof lang === 'string' ? lang : (lang?.name || 'Language')}{' '}
                 {typeof lang === 'object' && lang?.level ? `(${lang.level})` : ''}
               </span>
