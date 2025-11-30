@@ -35,69 +35,92 @@ img {
   height: auto;
 }
 
-/* CV Preview Mobile Optimization */
+/* CV Preview Mobile Optimization - Fix "Gendut" Layout */
 @media (max-width: 640px) {
   .cv-preview-container {
     width: 100% !important;
-    min-width: unset !important;
+    max-width: 100vw !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
   }
   
   .cv-content {
-    padding: 16px !important;
-    font-size: 14px !important;
-    line-height: 1.4 !important;
+    padding: 8px !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
   
   .cv-header {
-    padding: 16px !important;
-    margin-bottom: 16px !important;
+    padding: 8px !important;
+    margin-bottom: 8px !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
   
   .cv-section {
-    margin-bottom: 16px !important;
+    margin-bottom: 8px !important;
     padding: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
   }
 }
 
-/* Smart text overflow prevention */
+/* Prevent text overflow with smart wrapping */
 .cv-preview-container * {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  max-width: 100%;
-  box-sizing: border-box;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* Only break long words, not normal sentences */
-.cv-preview-container p,
-.cv-preview-container span,
-.cv-preview-container h1,
-.cv-preview-container h2,
-.cv-preview-container h3 {
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-/* Mobile text optimization - more reasonable sizes */
-@media (max-width: 480px) {
-  .cv-content {
-    padding: 12px !important;
+/* Mobile compact layout */
+@media (max-width: 640px) {
+  /* Compact header */
+  .cv-preview-container h1 { 
+    font-size: 14px !important; 
+    line-height: 1.2 !important; 
+    margin-bottom: 4px !important;
   }
   
-  /* Reasonable font sizes for mobile */
-  .cv-preview-container h1 { font-size: 18px !important; line-height: 1.3 !important; }
-  .cv-preview-container h2 { font-size: 16px !important; line-height: 1.3 !important; }
-  .cv-preview-container h3 { font-size: 14px !important; line-height: 1.3 !important; }
-  .cv-preview-container p { font-size: 13px !important; line-height: 1.4 !important; }
-  .cv-preview-container span { font-size: 12px !important; line-height: 1.3 !important; }
+  .cv-preview-container h2 { 
+    font-size: 12px !important; 
+    line-height: 1.2 !important; 
+    margin-bottom: 4px !important;
+    padding-bottom: 2px !important;
+  }
+  
+  .cv-preview-container h3 { 
+    font-size: 11px !important; 
+    line-height: 1.2 !important; 
+    margin-bottom: 2px !important;
+  }
+  
+  .cv-preview-container p { 
+    font-size: 10px !important; 
+    line-height: 1.3 !important; 
+    margin-bottom: 4px !important;
+  }
+  
+  .cv-preview-container span { 
+    font-size: 9px !important; 
+    line-height: 1.2 !important; 
+  }
+  
+  /* Compact contact info */
+  .cv-header .flex {
+    gap: 4px !important;
+    flex-direction: column !important;
+  }
+  
+  /* Compact skills */
+  .cv-preview-container .rounded-full {
+    padding: 2px 6px !important;
+    font-size: 8px !important;
+  }
 }
 
 body {

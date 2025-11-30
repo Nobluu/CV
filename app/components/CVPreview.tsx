@@ -344,16 +344,17 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
       </div>
 
       {/* CV Preview */}
-      <div className="w-full overflow-hidden">
-        <div className="w-full">
+      <div className="w-full overflow-hidden px-2 sm:px-0">
+        <div className="w-full max-w-full">
           <div 
             ref={cvRef}
-            className="cv-preview-container bg-white shadow-lg border rounded-lg mx-auto w-full"
+            className="cv-preview-container bg-white shadow-lg border rounded-lg mx-auto"
             style={{ 
-              minHeight: '842px', // A4 height in pixels at 96 DPI
+              minHeight: previewMode === 'mobile' ? 'auto' : '842px',
               width: '100%',
-              maxWidth: '100%',
-              boxSizing: 'border-box'
+              maxWidth: previewMode === 'mobile' ? '100vw' : '794px',
+              boxSizing: 'border-box',
+              fontSize: previewMode === 'mobile' ? '10px' : 'inherit'
             }}
           >
             {/* CV Content based on template (use normalized data to avoid merged fields) */}
@@ -383,12 +384,12 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
 // Template Components
 function ModernTemplate({ cvData }: { cvData: any }) {
   return (
-    <div className="cv-preview-container cv-content p-3 sm:p-6 lg:p-8">
+    <div className="cv-preview-container cv-content p-2 sm:p-6 lg:p-8">
       {/* Header */}
-          <div className="cv-header bg-primary-600 text-white p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
+          <div className="cv-header bg-primary-600 text-white p-2 sm:p-6 rounded mb-2 sm:mb-6">
             <div>
-              <h1 className="cv-text text-xl sm:text-2xl lg:text-3xl font-bold mb-2">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
-              <div className="flex flex-wrap gap-2 sm:gap-4 text-sm sm:text-base">
+              <h1 className="cv-text text-sm sm:text-2xl lg:text-3xl font-bold mb-1">{cvData.personalInfo?.name || 'Nama Lengkap'}</h1>
+              <div className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-4 text-xs sm:text-base">
                 <span className="cv-text break-all">{cvData.personalInfo?.email || 'email@example.com'}</span>
                 <span className="cv-text">{cvData.personalInfo?.phone || '+62 812 3456 7890'}</span>
                 <span className="cv-text break-words">{cvData.personalInfo?.address || 'Alamat'}</span>
