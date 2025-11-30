@@ -169,7 +169,7 @@ export default function AIChat({ onCVDataUpdate }: AIChatProps) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto w-full px-2 sm:px-0">
       <div className="bg-white rounded-lg shadow-sm border">
         {/* Header */}
         <div className="p-4 sm:p-6 border-b bg-gradient-to-r from-primary-50 to-blue-50">

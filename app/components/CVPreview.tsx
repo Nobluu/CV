@@ -219,7 +219,7 @@ export default function CVPreview({ cvData, template, onClear }: CVPreviewProps)
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto w-full overflow-x-hidden">
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border p-3 sm:p-6 mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between space-y-3 sm:space-y-0">
